@@ -3,7 +3,10 @@
 import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import JITResource from "./JITResource";
-import { stubConnect } from "@/lib/capabilities/stub-handlers";
+import {
+  connectCapability,
+  getUserId,
+} from "@/lib/capabilities/client-connect";
 import {
   CapabilityKind,
   CapabilityRequest,
@@ -67,6 +70,7 @@ export default function ChatSession() {
         body: JSON.stringify({
           messages: messagesForApi,
           capabilities: activeCaps,
+          user_id: getUserId(),
         }),
       });
       if (!res.ok || !res.body) throw new Error(`http ${res.status}`);
@@ -132,18 +136,30 @@ export default function ChatSession() {
     });
   }
 
-  function connect(index: number, kind: CapabilityKind) {
-    const label = stubConnect(kind);
-    const nextCaps: CapabilityState = {
-      ...caps,
-      [kind]: { state: "connected" as const, label },
-    };
-    setCaps(nextCaps);
-    markCapabilityResolved(index, "connected");
-    send(
-      `(${kind} is now connected as ${label} — please continue.)`,
-      nextCaps
-    );
+  async function connect(index: number, kind: CapabilityKind) {
+    try {
+      const { label } = await connectCapability(kind);
+      const nextCaps: CapabilityState = {
+        ...caps,
+        [kind]: { state: "connected" as const, label },
+      };
+      setCaps(nextCaps);
+      markCapabilityResolved(index, "connected");
+      send(
+        `(${kind} is now connected as ${label} — please continue.)`,
+        nextCaps
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setItems((prev) => {
+        const copy = [...prev];
+        copy.push({
+          kind: "agent",
+          text: `[connection failed: ${msg}]`,
+        });
+        return copy;
+      });
+    }
   }
 
   function skip(index: number, kind: CapabilityKind) {
