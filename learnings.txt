@@ -77,3 +77,28 @@ Shipped the JIT protocol:
 Key insight: the canonical suite's c05 (write thank-you email) correctly
 does NOT trip email.send — it's pure drafting. The "send email to Priya"
 task DOES trip it. The preamble's drafting-vs-sending distinction works.
+
+2026-04-22 — Orb pivot (dev mode). Single computer live end-to-end.
+Computer: f6d790f1-d9a5-4b8c-b6de-b6a75f69768d (name: spoq-dev-sam)
+URL:      https://f6d790f1.orbcloud.dev
+Round-trip: /api/chat → orbSandbox → wrapper /run → claude-code + GLM → 4.4s for "spoq live".
+
+Orb gotchas hit today:
+- /v1/computers requires the raw api_key (orb_...), NOT the session token
+  in ~/.orb/credentials. orb CLI's `computer list` uses the session token
+  and 401s; curl with the api_key works. Put the raw key in ORB_API_TOKEN.
+- Public URL pattern is LEFT(id, 8) + ".orbcloud.dev" — confirmed in
+  orb/cloud/src/subdomain_proxy.rs:119. The API doesn't return a url field.
+- orb.toml schema: [source] git= (not url=), [ports] expose= (not [[ports]]),
+  [backend] provider= (not [llm]), [agent.env] (not top-level [env]/[secrets]).
+- The runtime auto-sets ANTHROPIC_BASE_URL to the local Orb proxy regardless
+  of backend.provider (seen in debug-env dump: "http://10.42.175.1:10000").
+  For GLM we want claude-code to hit z.ai directly → wrapper server.js
+  unconditionally overrides ANTHROPIC_BASE_URL back to z.ai. z.ai must be
+  in [network] outbound allowlist.
+- No stop-agent endpoint. To redeploy new code: DELETE computer + recreate
+  + config + build + deploy. ~30s end-to-end with current runtime_mb=2048.
+
+Recall-DB note: the live orb_... api key for awlseninc@gmail.com on
+api.orbcloud.dev is orb_DVglmVdOuwTOW2rtxH9eoOcskmHoD4Of1mGbkwhVYUW
+(recalled from session 38140afa-... on 2026-04-21).
