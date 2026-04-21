@@ -1,38 +1,35 @@
-version = "0.1"
-
-[computer]
-name = "spoq-dev-sam"
-runtime_mb = 2048
-disk_mb = 8192
-
-[source]
-url = "https://github.com/AWLSEN/spoq-2.0"
-branch = "main"
-
-[build]
-working_dir = "agent-wrapper"
-steps = [
-  "npm install -g @anthropic-ai/claude-code@2.1.116",
-  "npm install --omit=dev",
-]
-
 [agent]
+name = "spoq-wrapper"
 lang = "node"
 entry = "server.js"
-args = []
 
-[llm]
-provider = "custom"
-base_url = "https://api.z.ai/api/anthropic"
-
-[[ports]]
-internal = 8000
-public = true
-
-[env]
+[agent.env]
+PORT = "8000"
 ANTHROPIC_BASE_URL = "https://api.z.ai/api/anthropic"
 ANTHROPIC_DEFAULT_OPUS_MODEL = "GLM-4.6"
 API_TIMEOUT_MS = "300000"
-
-[secrets]
 ANTHROPIC_AUTH_TOKEN = "${ANTHROPIC_AUTH_TOKEN}"
+
+[backend]
+provider = "custom"
+api_base = "https://api.z.ai/api/anthropic"
+routes = ["POST /v1/messages", "POST /v1/messages/count_tokens"]
+forward_headers = ["x-api-key", "authorization", "anthropic-version", "anthropic-beta"]
+
+[network]
+outbound = ["api.z.ai", "backend.composio.dev", "mcp.composio.dev"]
+
+[source]
+git = "https://github.com/AWLSEN/spoq-2.0"
+branch = "main"
+
+[build]
+working_dir = "/agent/code/agent-wrapper"
+steps = [
+  "cd /agent/code && ls",
+  "npm install -g @anthropic-ai/claude-code@2.1.116",
+  "cd /agent/code/agent-wrapper && npm install --omit=dev",
+]
+
+[ports]
+expose = [8000]
