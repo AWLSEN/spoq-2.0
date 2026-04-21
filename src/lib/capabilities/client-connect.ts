@@ -18,26 +18,18 @@ export function getUserId(): string {
   return v;
 }
 
-const COMPOSIO_SUPPORTED: CapabilityKind[] = ["email.send"];
-
-export function isComposioSupported(kind: CapabilityKind): boolean {
-  return COMPOSIO_SUPPORTED.includes(kind);
-}
-
 /**
  * Open the OAuth popup and poll /api/capabilities/status until the
  * connection goes ACTIVE (or the user closes the popup / we time out).
  * Resolves with the connected label on success, rejects on failure.
+ *
+ * Every capability routes through Composio. If the toolkit slug is
+ * unknown to Composio, /api/oauth/start will surface the error.
  */
 export async function connectCapability(
   kind: CapabilityKind
 ): Promise<{ label: string }> {
   const userId = getUserId();
-  if (!isComposioSupported(kind)) {
-    // capabilities without a composio toolkit mapping fall back to a
-    // stub label — the agent still gets told it's "connected".
-    return { label: stubLabelFor(kind) };
-  }
 
   const startUrl = `/api/oauth/start?kind=${encodeURIComponent(
     kind
@@ -77,7 +69,7 @@ export async function connectCapability(
         if (data.connected) {
           settled = true;
           try { popup.close(); } catch {}
-          resolve({ label: data.label ?? stubLabelFor(kind) });
+          resolve({ label: data.label ?? kind });
           return;
         }
       } catch {
@@ -87,13 +79,4 @@ export async function connectCapability(
     };
     setTimeout(tick, intervalMs);
   });
-}
-
-function stubLabelFor(kind: CapabilityKind): string {
-  switch (kind) {
-    case "identity": return "you";
-    case "email.send": return "your email";
-    case "phone.sms": return "your phone";
-    case "card.charge": return "your card";
-  }
 }

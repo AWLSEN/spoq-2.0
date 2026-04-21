@@ -1,20 +1,20 @@
 /**
  * JIT capability protocol.
  *
- * The agent (Claude Code + GLM) is taught via system preamble to emit a
- * request token inline in its output when it realizes it needs a real-world
- * capability. The portal detects the token, surfaces an inline prompt, and
- * on user response, carries the decision into the next turn.
+ * The agent (Claude Code + GLM) is taught via system preamble that when it
+ * needs a third-party service to complete the user's task, it emits a
+ * request token inline. The portal detects it, shows a connect card, and
+ * on connect routes through Composio OAuth for that toolkit.
  *
  * Token format (single line, self-closing XML-ish):
- *   <<SPOQ-NEED type="<kind>" reason="<short human reason>"/>>
+ *   <<SPOQ-NEED type="<composio-toolkit-slug>" reason="<short human reason>"/>>
+ *
+ * The `type` value IS the Composio toolkit slug — gmail, google_calendar,
+ * slack, notion, github, stripe, linear, twilio, calendly, google_drive, …
+ * The agent picks whichever toolkit fits; there is no closed menu.
  */
 
-export type CapabilityKind =
-  | "identity" // who is the user
-  | "email.send" // send email from the user
-  | "phone.sms" // send/receive SMS as the user
-  | "card.charge"; // charge a virtual card on the user's behalf
+export type CapabilityKind = string;
 
 export interface CapabilityRequest {
   kind: CapabilityKind;
@@ -22,30 +22,10 @@ export interface CapabilityRequest {
 }
 
 export type CapabilityStatus =
-  | { state: "absent" }
   | { state: "connected"; label: string }
   | { state: "declined" };
 
-/** Client-side ephemeral session state. */
-export type CapabilityState = Record<CapabilityKind, CapabilityStatus>;
+/** Client-side ephemeral session state, keyed by Composio toolkit slug. */
+export type CapabilityState = Record<string, CapabilityStatus>;
 
-export const DEFAULT_CAPABILITY_STATE: CapabilityState = {
-  identity: { state: "absent" },
-  "email.send": { state: "absent" },
-  "phone.sms": { state: "absent" },
-  "card.charge": { state: "absent" },
-};
-
-export const CAPABILITY_LABELS: Record<CapabilityKind, string> = {
-  identity: "who you are",
-  "email.send": "your email",
-  "phone.sms": "your phone",
-  "card.charge": "a payment card",
-};
-
-export const CAPABILITY_CONNECT_LABELS: Record<CapabilityKind, string> = {
-  identity: "Sign in",
-  "email.send": "Connect email",
-  "phone.sms": "Connect phone",
-  "card.charge": "Connect card",
-};
+export const DEFAULT_CAPABILITY_STATE: CapabilityState = {};

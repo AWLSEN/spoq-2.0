@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  CAPABILITY_CONNECT_LABELS,
-  CAPABILITY_LABELS,
-  CapabilityRequest,
-} from "@/lib/capabilities/types";
+import { CapabilityRequest } from "@/lib/capabilities/types";
 
 interface Props {
   request: CapabilityRequest;
@@ -13,14 +9,22 @@ interface Props {
   busy?: boolean;
 }
 
+function prettifyToolkit(slug: string): string {
+  return slug
+    .replace(/[._-]+/g, " ")
+    .split(" ")
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
 export default function JITResource({ request, onConnect, onSkip, busy }: Props) {
-  const label = CAPABILITY_LABELS[request.kind];
-  const connectLabel = CAPABILITY_CONNECT_LABELS[request.kind];
+  const label = prettifyToolkit(request.kind);
   return (
     <div className="self-stretch rounded-2xl border border-[#e7e1d5] bg-[#fffaf0] p-4 flex flex-col gap-3">
       <div className="flex flex-col gap-1">
         <div className="text-sm font-medium text-[#1a1a1a]">
-          Can I use {label}?
+          Can I use your {label}?
         </div>
         <div className="text-sm text-[#6b645a] leading-snug">{request.reason}</div>
       </div>
@@ -30,7 +34,7 @@ export default function JITResource({ request, onConnect, onSkip, busy }: Props)
           disabled={busy}
           className="rounded-full bg-[#1a1a1a] px-4 py-1.5 text-sm text-white disabled:bg-[#cfc9bd] transition-colors"
         >
-          {busy ? "Connecting…" : connectLabel}
+          {busy ? "Connecting…" : `Connect ${label}`}
         </button>
         <button
           onClick={onSkip}

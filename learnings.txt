@@ -102,3 +102,13 @@ Orb gotchas hit today:
 Recall-DB note: the live orb_... api key for awlseninc@gmail.com on
 api.orbcloud.dev is orb_DVglmVdOuwTOW2rtxH9eoOcskmHoD4Of1mGbkwhVYUW
 (recalled from session 38140afa-... on 2026-04-21).
+
+2026-04-22 — Capability catalog opened up. No more hardcoded 4-item menu
+(identity / email.send / phone.sms / card.charge). The agent now emits
+<<SPOQ-NEED type="<composio-toolkit-slug>" .../>> for any toolkit (gmail,
+slack, notion, google_calendar, github, stripe, linear, ...) and the portal
+routes every request through Composio OAuth. Rationale (Sam): "the agent is
+smart enough to understand things by itself, why limit it with hardcoded
+menus". Parser keeps legacy aliases (email.send → gmail, phone.sms → twilio,
+card.charge → stripe) for back-compat. JITResource renders "Can I use your
+<Prettified Slug>?" — label derived on the fly, no lookup table.
