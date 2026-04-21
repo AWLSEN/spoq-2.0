@@ -10,6 +10,7 @@ import {
   ConversationMessage,
   flattenConversation,
 } from "@/lib/agent/conversation";
+import { buildMcpServersForUser } from "@/lib/composio/session";
 
 export const runtime = "nodejs";
 
@@ -18,6 +19,8 @@ interface ChatRequest {
   messages: ConversationMessage[];
   // Client-tracked ephemeral capability state.
   capabilities?: CapabilityState;
+  // Stable per-browser id; used as Composio user_id for MCP + OAuth.
+  user_id?: string;
 }
 
 /**
@@ -44,8 +47,10 @@ export async function POST(req: NextRequest) {
     ...(body.capabilities ?? {}),
   };
 
+  const userId = typeof body.user_id === "string" ? body.user_id : "";
   const prompt = flattenConversation(messages);
   const preamble = buildSystemPreamble(capState);
+  const mcpServers = await buildMcpServersForUser(userId, capState);
 
   const sandbox = getSandbox();
   const encoder = new TextEncoder();
@@ -62,6 +67,7 @@ export async function POST(req: NextRequest) {
       try {
         for await (const ev of sandbox.run(prompt, {
           appendSystemPrompt: preamble,
+          mcpServers,
         })) {
           if (ev.kind === "stdout") {
             buffer += ev.chunk;

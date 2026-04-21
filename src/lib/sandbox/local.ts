@@ -1,8 +1,13 @@
 import { spawn } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { DEFAULT_TIMEOUT_MS, Sandbox, SandboxEvent } from "./types";
+import {
+  DEFAULT_TIMEOUT_MS,
+  Sandbox,
+  SandboxEvent,
+  SandboxRunOptions,
+} from "./types";
 
 /**
  * Local subprocess sandbox: spawns `claude -p <prompt>` in an isolated
@@ -14,7 +19,7 @@ import { DEFAULT_TIMEOUT_MS, Sandbox, SandboxEvent } from "./types";
 class LocalSandbox implements Sandbox {
   async *run(
     prompt: string,
-    opts?: { timeoutMs?: number; appendSystemPrompt?: string }
+    opts?: SandboxRunOptions
   ): AsyncGenerator<SandboxEvent> {
     const timeoutMs = opts?.timeoutMs ?? DEFAULT_TIMEOUT_MS;
     const workdir = mkdtempSync(join(tmpdir(), "spoq-sandbox-"));
@@ -39,6 +44,19 @@ class LocalSandbox implements Sandbox {
     const args = ["-p", prompt, "--dangerously-skip-permissions"];
     if (opts?.appendSystemPrompt) {
       args.push("--append-system-prompt", opts.appendSystemPrompt);
+    }
+    if (opts?.mcpServers && opts.mcpServers.length > 0) {
+      const mcpConfig = {
+        mcpServers: Object.fromEntries(
+          opts.mcpServers.map((s) => [
+            s.name,
+            { type: "http", url: s.url, headers: s.headers ?? {} },
+          ])
+        ),
+      };
+      const mcpPath = join(workdir, ".mcp.json");
+      writeFileSync(mcpPath, JSON.stringify(mcpConfig, null, 2), "utf8");
+      args.push("--mcp-config", mcpPath, "--strict-mcp-config");
     }
 
     const child = spawn("claude", args, {
