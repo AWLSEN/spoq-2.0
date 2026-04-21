@@ -126,6 +126,16 @@ const server = http.createServer(async (req, res) => {
     res.end(JSON.stringify({ ok: true, version: "0.1.0" }));
     return;
   }
+  if (req.method === "GET" && req.url === "/debug/env") {
+    const keys = ["ANTHROPIC_BASE_URL", "ANTHROPIC_DEFAULT_OPUS_MODEL", "API_TIMEOUT_MS", "PORT", "ORB_PORT", "ORB_PROXY_PORT", "AGENT_API_BASE_URL"];
+    const out = {};
+    for (const k of keys) out[k] = process.env[k] ?? null;
+    out.HAS_AUTH_TOKEN = Boolean(process.env.ANTHROPIC_AUTH_TOKEN);
+    out.AUTH_TOKEN_PREFIX = (process.env.ANTHROPIC_AUTH_TOKEN ?? "").slice(0, 8);
+    res.writeHead(200, { "content-type": "application/json" });
+    res.end(JSON.stringify(out, null, 2));
+    return;
+  }
   if (req.method === "POST" && req.url === "/run") {
     await handleRun(req, res);
     return;
