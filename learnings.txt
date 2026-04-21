@@ -1,0 +1,7 @@
+SPOQ 2.0 learnings
+==================
+
+2026-04-21 — Phase 0 started.
+GLM key recalled from orb-async-dev/.env (ANTHROPIC_AUTH_TOKEN=3d37cd7a...).
+Claude Code CLI installed at /Users/sam/.local/bin/claude (v2.1.116).
+GitHub auth active as nextbysam. Will create AWLSEN/spoq-2.0 public repo.

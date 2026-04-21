@@ -1,0 +1,19 @@
+node_modules/
+.next/
+.env
+.env.local
+.env.*.local
+dist/
+out/
+build/
+.DS_Store
+*.log
+.vercel
+.turbo
+coverage/
+.vscode/
+.idea/
+
+# Spike artifacts
+phase0-spike/workdir/
+phase0-spike/results/*.jsonl

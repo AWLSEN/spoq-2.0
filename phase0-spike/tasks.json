@@ -1,0 +1,32 @@
+[
+  {
+    "id": "t1_recipe",
+    "category": "info",
+    "prompt": "What's a simple dal tadka recipe I can make in 30 minutes? Keep it under 200 words.",
+    "expect": "A concrete recipe with ingredients and steps."
+  },
+  {
+    "id": "t2_code",
+    "category": "code",
+    "prompt": "Write a Python function called reverse_string that reverses a string. Include a one-line docstring and one example call.",
+    "expect": "Valid Python def reverse_string(s): that returns s[::-1] or equivalent."
+  },
+  {
+    "id": "t3_translate",
+    "category": "translate",
+    "prompt": "Translate 'hello, how are you?' into Hindi, Spanish, and French. Format as a bullet list.",
+    "expect": "Three correct translations, one per language."
+  },
+  {
+    "id": "t4_plan",
+    "category": "plan",
+    "prompt": "Plan a 2-day weekend itinerary for Goa for an older couple. Day 1 and Day 2, 4-5 activities each, with timing.",
+    "expect": "Two labelled days with 4-5 activities each, appropriate for older travellers."
+  },
+  {
+    "id": "t5_info",
+    "category": "info",
+    "prompt": "List the top 3 benefits of solar panels in a hot climate. One sentence per benefit.",
+    "expect": "Three distinct benefits relevant to hot climates."
+  }
+]
