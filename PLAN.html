@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPOQ 2.0 — Plan v2</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+:root {
+  --bg: hsl(0, 0%, 6%);
+  --bg-raised: hsl(0, 0%, 9%);
+  --bg-sunken: hsl(0, 0%, 4%);
+  --text: hsl(0, 0%, 92%);
+  --text-dim: hsl(0, 0%, 62%);
+  --text-faint: hsl(0, 0%, 38%);
+  --line: hsl(0, 0%, 22%);
+  --line-strong: hsl(0, 0%, 45%);
+  --accent: hsl(28, 85%, 62%);
+  --accent-dim: hsl(28, 30%, 10%);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-weight: 300;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+body { padding: 80px 40px 120px; max-width: 1200px; margin: 0 auto; }
+
+h1, h2, h3, h4 { font-family: 'Space Grotesk', sans-serif; font-weight: 300; letter-spacing: -0.02em; }
+h1 { font-size: 68px; line-height: 1; margin-bottom: 16px; }
+h1 .mono { font-family: 'IBM Plex Mono', monospace; font-weight: 400; font-size: 0.32em; color: var(--text-dim); vertical-align: middle; margin-left: 16px; letter-spacing: 0; }
+h2 { font-size: 36px; margin: 0 0 28px; letter-spacing: -0.015em; }
+h2 .num { font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 400; color: var(--text-faint); display: block; margin-bottom: 8px; letter-spacing: 0.08em; }
+h3 { font-size: 20px; font-weight: 400; letter-spacing: -0.01em; }
+h4 { font-size: 15px; font-weight: 500; color: var(--text); letter-spacing: 0; font-family: 'IBM Plex Sans', sans-serif; }
+
+p { color: var(--text-dim); font-size: 15px; max-width: 68ch; }
+p + p { margin-top: 12px; }
+strong { color: var(--text); font-weight: 500; }
+em { font-style: italic; color: var(--text); }
+.mono { font-family: 'IBM Plex Mono', monospace; font-size: 13px; }
+.accent { color: var(--accent); }
+
+header { border-bottom: 1px solid var(--line); padding-bottom: 44px; margin-bottom: 80px; }
+header .kicker { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.15em; color: var(--text-faint); text-transform: uppercase; margin-bottom: 28px; }
+header .version { color: var(--accent); }
+header .one-liner { font-family: 'Space Grotesk', sans-serif; font-weight: 300; font-size: 24px; color: var(--text-dim); margin-top: 28px; max-width: 62ch; line-height: 1.35; }
+header .one-liner strong { color: var(--text); font-weight: 400; }
+
+.meta-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; background: var(--line); margin-top: 40px; border: 1px solid var(--line); }
+.meta-strip > div { background: var(--bg); padding: 18px 20px; }
+.meta-strip .label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.14em; color: var(--text-faint); text-transform: uppercase; margin-bottom: 8px; }
+.meta-strip .value { font-family: 'Space Grotesk', sans-serif; font-weight: 400; font-size: 15px; color: var(--text); }
+
+section { margin-bottom: 110px; }
+
+/* core thesis */
+.thesis {
+  margin-top: 40px;
+  border: 1px solid var(--accent);
+  padding: 36px 40px;
+  background: var(--accent-dim);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 32px;
+  align-items: center;
+}
+.thesis-num { font-family: 'Space Grotesk', sans-serif; font-weight: 300; font-size: 52px; color: var(--accent); line-height: 1; letter-spacing: -0.04em; }
+.thesis-text { font-family: 'Space Grotesk', sans-serif; font-size: 22px; color: var(--text); line-height: 1.4; font-weight: 300; }
+.thesis-text em { color: var(--accent); font-style: normal; }
+
+/* decisions */
+.decisions { margin-top: 28px; border: 1px solid var(--line); }
+.decision-row { display: grid; grid-template-columns: 200px 1fr 140px; gap: 24px; padding: 18px 24px; border-bottom: 1px solid var(--line); align-items: baseline; }
+.decision-row:last-child { border-bottom: none; }
+.decision-row .key { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; color: var(--text-faint); text-transform: uppercase; }
+.decision-row .val { color: var(--text); font-size: 15px; }
+.decision-row .val strong { color: var(--accent); }
+.decision-row .tag { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-faint); text-align: right; }
+.decision-row .tag.new { color: var(--accent); }
+
+/* tiered access */
+.tiers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; margin-top: 28px; background: var(--line); border: 1px solid var(--line); }
+.tier { background: var(--bg); padding: 32px 28px; display: flex; flex-direction: column; }
+.tier-name { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.14em; color: var(--text-faint); text-transform: uppercase; margin-bottom: 10px; }
+.tier-title { font-family: 'Space Grotesk', sans-serif; font-size: 24px; font-weight: 400; margin-bottom: 4px; color: var(--text); }
+.tier-price { font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: var(--text-dim); margin-bottom: 20px; }
+.tier.paid { border: 1px solid var(--accent); margin: -1px; }
+.tier.paid .tier-name { color: var(--accent); }
+.tier-caps { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: var(--text-dim); }
+.tier-caps li { padding-left: 16px; position: relative; line-height: 1.5; }
+.tier-caps li::before { content: '·'; position: absolute; left: 4px; color: var(--text-faint); }
+.tier-caps li.hi { color: var(--text); }
+.tier-caps li.hi::before { content: '+'; color: var(--accent); }
+.tier-caps li.no { color: var(--text-faint); text-decoration: line-through; text-decoration-color: var(--text-faint); }
+.tier-caps li.no::before { content: '×'; color: var(--text-faint); text-decoration: none; }
+.tier-arrow { text-align: center; color: var(--text-faint); font-family: 'IBM Plex Mono', monospace; font-size: 13px; margin: 18px 0; }
+
+/* journey */
+.journey { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-top: 28px; position: relative; }
+.journey::before { content: ''; position: absolute; top: 28px; left: 4%; right: 4%; height: 1px; background: linear-gradient(to right, var(--line), var(--accent), var(--line)); z-index: 0; }
+.j-step { position: relative; z-index: 1; text-align: center; }
+.j-dot { width: 26px; height: 26px; margin: 0 auto 14px; border: 1px solid var(--text-faint); background: var(--bg); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-dim); }
+.j-step.key .j-dot { border-color: var(--accent); color: var(--accent); }
+.j-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 6px; }
+.j-desc { font-size: 12px; color: var(--text-dim); line-height: 1.4; padding: 0 4px; }
+.j-step.key .j-label { color: var(--accent); }
+
+.journey-script { margin-top: 44px; border: 1px solid var(--line); padding: 28px 32px; background: var(--bg-raised); font-family: 'IBM Plex Mono', monospace; font-size: 13px; line-height: 1.9; color: var(--text-dim); }
+.journey-script .usr { color: var(--accent); }
+.journey-script .sys { color: var(--text); }
+.journey-script .agent { color: var(--text); font-family: 'IBM Plex Sans', sans-serif; font-weight: 300; }
+.journey-script .def { color: var(--accent); font-family: 'IBM Plex Sans', sans-serif; background: var(--accent-dim); padding: 2px 8px; }
+
+/* screens */
+.screens { margin-top: 28px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 18px; }
+.screen { display: flex; flex-direction: column; }
+.screen-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.12em; color: var(--text-faint); text-transform: uppercase; margin-bottom: 10px; }
+.screen-frame { border: 1px solid var(--line); background: var(--bg-sunken); aspect-ratio: 9/15; display: flex; flex-direction: column; overflow: hidden; }
+.screen-url { font-family: 'IBM Plex Mono', monospace; font-size: 9px; padding: 6px 10px; border-bottom: 1px solid var(--line); color: var(--text-faint); }
+.screen-body { flex: 1; padding: 12px 10px; display: flex; flex-direction: column; gap: 6px; }
+.screen-note { margin-top: 12px; font-size: 12px; color: var(--text-dim); line-height: 1.5; }
+.s-landing { justify-content: center; align-items: stretch; gap: 10px; text-align: center; padding: 18px 12px; }
+.s-landing .title { font-family: 'Space Grotesk', sans-serif; font-size: 13px; color: var(--text); font-weight: 400; margin-bottom: 6px; }
+.s-landing .input { width: 100%; border: 1px solid var(--text-faint); padding: 7px 8px; font-size: 9px; color: var(--text-faint); text-align: left; }
+.s-landing .input.filled { color: var(--text); border-color: var(--text); }
+.s-landing .chips { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; }
+.s-landing .chip { font-size: 8px; border: 1px solid var(--line-strong); padding: 4px 6px; color: var(--text-dim); }
+.s-running { gap: 5px; }
+.s-bubble { font-size: 9px; padding: 5px 7px; border: 1px solid var(--line); line-height: 1.4; max-width: 88%; }
+.s-bubble.user { align-self: flex-end; color: var(--accent); border-color: var(--accent); }
+.s-bubble.agent { align-self: flex-start; color: var(--text); }
+.s-browser { margin-top: 6px; border: 1px solid var(--line); padding: 6px 7px; background: var(--bg); flex: 1; }
+.s-browser-bar { font-family: 'IBM Plex Mono', monospace; font-size: 7px; color: var(--accent); margin-bottom: 4px; }
+.s-browser-content { color: var(--text-dim); font-size: 8px; line-height: 1.5; font-family: 'IBM Plex Mono', monospace; }
+.s-jit { margin-top: 4px; border: 1px dashed var(--accent); padding: 7px; font-size: 8px; color: var(--accent); text-align: center; }
+.s-continue { margin-top: auto; font-size: 9px; color: var(--text-faint); text-align: center; padding-top: 8px; border-top: 1px solid var(--line); }
+
+/* interface */
+.interface { margin-top: 28px; border: 1px solid var(--line); background: var(--bg-sunken); display: grid; grid-template-columns: 200px 1fr 280px; min-height: 480px; overflow: hidden; }
+.iface-rail { border-right: 1px solid var(--line); padding: 20px 16px; display: flex; flex-direction: column; }
+.iface-rail .logo { font-family: 'Space Grotesk', sans-serif; font-size: 20px; color: var(--text); margin-bottom: 20px; letter-spacing: -0.02em; }
+.iface-rail .new-chat { border: 1px solid var(--text); padding: 9px 12px; font-size: 12px; color: var(--text); text-align: center; margin-bottom: 22px; }
+.iface-rail .thread-list { font-size: 12px; color: var(--text-dim); display: flex; flex-direction: column; gap: 4px; }
+.iface-rail .thread { padding: 7px 10px; }
+.iface-rail .thread.active { background: var(--bg); color: var(--text); border: 1px solid var(--line); }
+.iface-rail .settings { margin-top: auto; padding-top: 20px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-faint); letter-spacing: 0.08em; }
+.iface-main { display: flex; flex-direction: column; padding: 22px; }
+.iface-title { font-family: 'Space Grotesk', sans-serif; font-size: 16px; color: var(--text); margin-bottom: 18px; font-weight: 400; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+.iface-thread { flex: 1; display: flex; flex-direction: column; gap: 12px; font-size: 13px; }
+.iface-bubble { padding: 10px 14px; border: 1px solid var(--line); max-width: 80%; line-height: 1.5; }
+.iface-bubble.user { align-self: flex-end; color: var(--text); background: var(--bg); }
+.iface-bubble.agent { align-self: flex-start; color: var(--text-dim); }
+.iface-bubble.agent strong { color: var(--text); }
+.iface-jit { align-self: flex-start; padding: 12px 14px; border: 1px dashed var(--accent); color: var(--accent); font-size: 12px; }
+.iface-input { margin-top: 16px; border: 1px solid var(--text); padding: 12px 16px; font-size: 13px; color: var(--text-faint); background: var(--bg); }
+.iface-panel { border-left: 1px solid var(--line); padding: 20px 18px; background: var(--bg); }
+.iface-panel-tabs { display: flex; gap: 14px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.1em; color: var(--text-faint); margin-bottom: 14px; border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+.iface-panel-tab.active { color: var(--accent); }
+.iface-browser-frame { border: 1px solid var(--line); padding: 12px; min-height: 280px; background: var(--bg-sunken); font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-dim); line-height: 1.7; }
+.iface-browser-url { color: var(--accent); margin-bottom: 10px; font-size: 10px; }
+.iface-annotations { margin-top: 2px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; background: var(--line); border: 1px solid var(--line); border-top: none; }
+.iface-annotations > div { background: var(--bg); padding: 20px 22px; }
+.iface-annotations h4 { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.1em; color: var(--accent); text-transform: uppercase; margin-bottom: 8px; font-weight: 400; }
+.iface-annotations p { font-size: 13px; color: var(--text-dim); line-height: 1.5; }
+
+/* design laws */
+.design-laws-head { margin-top: 56px; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid var(--line); display: flex; align-items: baseline; justify-content: space-between; }
+.design-laws-head h3 { font-family: 'Space Grotesk', sans-serif; font-size: 24px; color: var(--text); font-weight: 300; letter-spacing: -0.01em; }
+.design-laws-head .sub { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-faint); letter-spacing: 0.12em; text-transform: uppercase; }
+.design-laws { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; background: var(--line); border: 1px solid var(--line); }
+.design-laws > div { background: var(--bg); padding: 24px 26px; }
+.design-law-num { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; color: var(--text-faint); margin-bottom: 10px; }
+.design-law-rule { font-family: 'Space Grotesk', sans-serif; font-size: 17px; color: var(--text); margin-bottom: 10px; font-weight: 400; line-height: 1.3; }
+.design-law-desc { font-size: 13px; color: var(--text-dim); line-height: 1.55; }
+
+/* architecture */
+.arch { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 28px; }
+.arch-diagram { border: 1px solid var(--line); padding: 28px; background: var(--bg-sunken); font-family: 'IBM Plex Mono', monospace; font-size: 12px; line-height: 1.7; color: var(--text-dim); white-space: pre; overflow-x: auto; }
+.arch-diagram .hl { color: var(--accent); }
+.arch-diagram .tx { color: var(--text); }
+.stack { display: flex; flex-direction: column; gap: 2px; }
+.stack-row { display: grid; grid-template-columns: 140px 1fr; padding: 12px 18px; border: 1px solid var(--line); gap: 16px; align-items: baseline; }
+.stack-row + .stack-row { border-top: none; }
+.stack-layer { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-faint); }
+.stack-val { color: var(--text); font-family: 'IBM Plex Sans', sans-serif; font-size: 14px; }
+.stack-val .vendor { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--accent); margin-left: 6px; }
+
+.limbs-vendor { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; margin-top: 28px; background: var(--line); border: 1px solid var(--line); }
+.limb-card { background: var(--bg); padding: 24px 18px; }
+.limb-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.limb-svg { width: 24px; height: 24px; stroke: var(--text); fill: none; stroke-width: 1.3; flex-shrink: 0; }
+.limb-title { font-family: 'Space Grotesk', sans-serif; font-weight: 400; font-size: 15px; color: var(--text); }
+.limb-vendor { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.08em; color: var(--accent); text-transform: uppercase; margin-bottom: 10px; }
+.limb-detail { font-size: 12px; color: var(--text-dim); line-height: 1.5; }
+
+/* monetization */
+.monetize { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; background: var(--line); border: 1px solid var(--line); margin-top: 28px; }
+.monetize > div { background: var(--bg); padding: 32px 32px; }
+.mon-label { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 14px; }
+.mon-label.hi { color: var(--accent); }
+.mon-title { font-family: 'Space Grotesk', sans-serif; font-weight: 400; font-size: 22px; margin-bottom: 14px; color: var(--text); }
+.mon-body { font-size: 14px; color: var(--text-dim); line-height: 1.55; }
+
+/* verification */
+.verif-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 2px; margin-top: 28px; background: var(--line); border: 1px solid var(--line); }
+.verif-cell { background: var(--bg); padding: 24px 26px; }
+.verif-cell h4 { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; color: var(--accent); text-transform: uppercase; font-weight: 400; margin-bottom: 10px; }
+.verif-cell .when { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-faint); margin-bottom: 12px; }
+.verif-cell .rule { font-family: 'Space Grotesk', sans-serif; font-size: 17px; color: var(--text); font-weight: 400; margin-bottom: 8px; line-height: 1.3; }
+.verif-cell p { font-size: 13px; color: var(--text-dim); line-height: 1.5; }
+
+.loop-diagram { margin-top: 36px; border: 1px solid var(--line); padding: 36px; background: var(--bg-sunken); display: flex; justify-content: center; }
+.loop-diagram svg { max-width: 100%; height: auto; }
+
+.canonical { margin-top: 28px; border: 1px solid var(--line); padding: 28px 32px; }
+.canonical h4 { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; color: var(--accent); text-transform: uppercase; font-weight: 400; margin-bottom: 16px; }
+.canonical-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px 32px; font-size: 13px; color: var(--text-dim); }
+.canonical-list > div { padding-left: 24px; position: relative; line-height: 1.5; }
+.canonical-list > div::before { content: ''; position: absolute; left: 0; top: 9px; width: 12px; height: 1px; background: var(--line-strong); }
+.canonical-list span.cat { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.08em; color: var(--text-faint); text-transform: uppercase; margin-right: 6px; }
+
+/* phases */
+.phases { margin-top: 28px; display: flex; flex-direction: column; }
+.phase { display: grid; grid-template-columns: 80px 220px 1fr 150px; padding: 22px 24px; border: 1px solid var(--line); gap: 20px; align-items: baseline; }
+.phase + .phase { border-top: none; }
+.phase:hover { background: var(--bg-raised); }
+.phase-num { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; color: var(--text-faint); }
+.phase-name { font-family: 'Space Grotesk', sans-serif; font-size: 17px; font-weight: 400; color: var(--text); }
+.phase-desc { font-size: 13px; color: var(--text-dim); line-height: 1.5; }
+.phase-time { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-faint); text-align: right; letter-spacing: 0.04em; }
+.phase.gate { border-color: var(--accent); background: var(--accent-dim); }
+.phase.gate .phase-num, .phase.gate .phase-time { color: var(--accent); }
+.phase.gate .phase-name { color: var(--accent); }
+.phase-verify { grid-column: 1 / -1; padding: 10px 0 0 80px; border-top: 1px dashed var(--line); margin-top: 6px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-faint); letter-spacing: 0.04em; }
+.phase-verify .lbl { color: var(--accent); margin-right: 10px; }
+
+/* repo & done */
+.wrap-two { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 28px; }
+.repo-tree { border: 1px solid var(--line); padding: 24px 28px; background: var(--bg-sunken); font-family: 'IBM Plex Mono', monospace; font-size: 12px; line-height: 1.85; color: var(--text-dim); }
+.repo-tree .dir { color: var(--text); }
+.repo-tree .cmt { color: var(--text-faint); }
+.repo-tree .hl { color: var(--accent); }
+
+.workflow { display: flex; flex-direction: column; gap: 14px; }
+.workflow-item { border: 1px solid var(--line); padding: 16px 20px; }
+.workflow-item h4 { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; font-weight: 400; }
+.workflow-item p { font-size: 13px; color: var(--text-dim); }
+.workflow-item .mono-inline { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--text); background: var(--bg-sunken); padding: 1px 6px; border: 1px solid var(--line); }
+
+.metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; background: var(--line); border: 1px solid var(--line); margin-top: 36px; }
+.metric { background: var(--bg); padding: 26px 22px; }
+.metric-label { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 12px; }
+.metric-num { font-family: 'Space Grotesk', sans-serif; font-weight: 300; font-size: 38px; color: var(--text); line-height: 1; letter-spacing: -0.03em; margin-bottom: 8px; }
+.metric-num .unit { font-size: 16px; color: var(--text-dim); margin-left: 2px; }
+.metric-desc { font-size: 12px; color: var(--text-dim); line-height: 1.4; }
+
+footer { margin-top: 100px; padding-top: 40px; border-top: 1px solid var(--line); font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-faint); letter-spacing: 0.08em; display: flex; justify-content: space-between; }
+
+@media (max-width: 1000px) {
+  .screens { grid-template-columns: repeat(2, 1fr); }
+  .interface { grid-template-columns: 1fr; min-height: auto; }
+  .iface-rail { border-right: none; border-bottom: 1px solid var(--line); }
+  .iface-panel { border-left: none; border-top: 1px solid var(--line); }
+  .iface-annotations { grid-template-columns: 1fr; }
+  .design-laws { grid-template-columns: 1fr; }
+  .tiers { grid-template-columns: 1fr; }
+  .arch { grid-template-columns: 1fr; }
+  .limbs-vendor { grid-template-columns: repeat(2, 1fr); }
+  .monetize { grid-template-columns: 1fr; }
+  .verif-grid { grid-template-columns: 1fr; }
+  .canonical-list { grid-template-columns: 1fr; }
+  .wrap-two { grid-template-columns: 1fr; }
+  .metrics { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 900px) {
+  body { padding: 40px 20px; }
+  h1 { font-size: 40px; }
+  h2 { font-size: 24px; }
+  .meta-strip { grid-template-columns: 1fr; }
+  .journey { grid-template-columns: repeat(2, 1fr); }
+  .journey::before { display: none; }
+  .phase { grid-template-columns: 1fr; gap: 8px; }
+  .phase-verify { padding-left: 0; }
+  .phase-time { text-align: left; }
+  .decision-row { grid-template-columns: 1fr; gap: 4px; }
+  .decision-row .tag { text-align: left; }
+  .thesis { grid-template-columns: 1fr; gap: 12px; }
+  .metrics { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="kicker">SPOQ 2.0 &nbsp;·&nbsp; PLAN <span class="version">v2</span> &nbsp;·&nbsp; 2026-04-21 &nbsp;·&nbsp; GLM-FIRST / DEFERRED-LOGIN</div>
+  <h1>Grandma-ready, by default.<span class="mono">// plan v2, closed loop</span></h1>
+  <p class="one-liner"><strong>Land, type, go.</strong> No login at the door — only at the cashier. Claude Code running against GLM endpoints in a pre-warmed Orb sandbox. They pay us. They never see an API key. Every phase has a verification gate that says "ship or rebuild."</p>
+
+  <div class="meta-strip">
+    <div><div class="label">Repo</div><div class="value">AWLSEN/spoq-2.0</div></div>
+    <div><div class="label">Brain</div><div class="value">Claude Code + GLM</div></div>
+    <div><div class="label">Compute</div><div class="value">OrbCloud</div></div>
+    <div><div class="label">Timeline</div><div class="value">Day 0 spike → 8 weeks</div></div>
+  </div>
+</header>
+
+<!-- ============ THESIS ============ -->
+<section>
+  <div class="thesis">
+    <div class="thesis-num">=</div>
+    <div class="thesis-text">The agents are <em>already smart</em>. GLM makes them <em>effectively free</em>. All we do is design so grandma can drive — and verify, every loop, that she still can.</div>
+  </div>
+</section>
+
+<!-- ============ 01 DECISIONS LOCKED ============ -->
+<section>
+  <h2><span class="num">01 / DECISIONS LOCKED</span>Every question closed. No more branching.</h2>
+  <p>Every decision below is frozen. Plan v1 punted on several of these; v2 closes them.</p>
+
+  <div class="decisions">
+    <div class="decision-row">
+      <div class="key">Product shape</div>
+      <div class="val"><strong>Doer, not maker.</strong> Plain-English task → done. Closer to ChatGPT than VS Code.</div>
+      <div class="tag">locked</div>
+    </div>
+    <div class="decision-row">
+      <div class="key">Default brain</div>
+      <div class="val"><strong>Claude Code running against GLM endpoints.</strong> GLM-4.6 via Anthropic-compatible API. Effectively-free inference, smart enough for 95% of grandma tasks.</div>
+      <div class="tag new">new · v2</div>
+    </div>
+    <div class="decision-row">
+      <div class="key">Login policy</div>
+      <div class="val"><strong>Deferred login.</strong> Anonymous users get info tasks immediately. Login gate triggers only when an action requires identity (spending, sending, booking).</div>
+      <div class="tag new">new · v2</div>
+    </div>
+    <div class="decision-row">
+      <div class="key">Harness picker</div>
+      <div class="val"><strong>Hidden by default.</strong> Pro-mode toggle in Settings exposes picker for power users.</div>
+      <div class="tag">locked</div>
+    </div>
+    <div class="decision-row">
+      <div class="key">API keys</div>
+      <div class="val"><strong>Users pay SPOQ.</strong> Never see a provider key. Pro mode unlocks BYO key for cost savers.</div>
+      <div class="tag">locked</div>
+    </div>
+    <div class="decision-row">
+      <div class="key">Abuse control</div>
+      <div class="val"><strong>Turnstile + IP rate limit + sandbox TTL.</strong> Anon: 3 tasks/IP/day, 5-min idle reap, invisible captcha. Even with free GLM, Orb compute isn't free.</div>
+      <div class="tag new">new · v2</div>
+    </div>
+    <div class="decision-row">
+      <div class="key">Auth</div>
+      <div class="val"><strong>Google OAuth only</strong> for v1. Google One-Tap preferred. Triggered at first real-world action, not at landing.</div>
+      <div class="tag">locked</div>
+    </div>
+    <div class="decision-row">
+      <div class="key">Repo</div>
+      <div class="val"><strong>AWLSEN/spoq-2.0, fresh.</strong> Old repos stay, untouched. Commit every step, push every 5.</div>
+      <div class="tag">locked</div>
+    </div>
+    <div class="decision-row">
+      <div class="key">Verification</div>
+      <div class="val"><strong>Every phase has a gate.</strong> 20 canonical grandma tasks run continuously against prod. LLM judge scores each. Regressions alert.</div>
+      <div class="tag new">new · v2</div>
+    </div>
+    <div class="decision-row">
+      <div class="key">Design law</div>
+      <div class="val"><strong>If grandma can't do it in one tap, rebuild.</strong> Zero occurrences of "harness," "agent," "API," "LLM," "MCP" on the default surface.</div>
+      <div class="tag">locked</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 02 TIERED ACCESS ============ -->
+<section>
+  <h2><span class="num">02 / TIERED ACCESS</span>Anonymous → Identified → Paid. The funnel replaces the login wall.</h2>
+  <p>Every user walks through three doors in order. The first two are free and invisible. The third is where money changes hands — and only if the user wants to reach it. This replaces the "sign in first" pattern entirely.</p>
+
+  <div class="tiers">
+    <div class="tier">
+      <div class="tier-name">TIER 00 &nbsp;·&nbsp; ANONYMOUS</div>
+      <div class="tier-title">Just type</div>
+      <div class="tier-price">No login. No card. No account.</div>
+      <ul class="tier-caps">
+        <li class="hi">Landing → type → agent replies</li>
+        <li class="hi">GLM-powered info tasks (research, recipes, explanations)</li>
+        <li class="hi">Read-only browser (view pages, no logins)</li>
+        <li>3 tasks / IP / day, 5-min sandbox TTL</li>
+        <li>Chat history lives in sessionStorage only</li>
+        <li class="no">No card, phone, email, persistence</li>
+      </ul>
+    </div>
+    <div class="tier paid">
+      <div class="tier-name">TIER 01 &nbsp;·&nbsp; IDENTIFIED</div>
+      <div class="tier-title">Sign in — only when needed</div>
+      <div class="tier-price">Free. Triggered by the agent, not by us.</div>
+      <ul class="tier-caps">
+        <li class="hi">Persistent sandbox (wakes in 0.9s forever)</li>
+        <li class="hi">Chat history saved</li>
+        <li class="hi">Phone, email provisioned on request</li>
+        <li class="hi">Agent can log in to sites on user's behalf</li>
+        <li>Daily usage cap (higher than anon)</li>
+        <li class="no">No spending yet (no card)</li>
+      </ul>
+    </div>
+    <div class="tier">
+      <div class="tier-name">TIER 02 &nbsp;·&nbsp; PAID</div>
+      <div class="tier-title">When the agent spends</div>
+      <div class="tier-price">$15/mo Plus &nbsp;·&nbsp; $49/mo Developer</div>
+      <ul class="tier-caps">
+        <li class="hi">Virtual card issued (Stripe)</li>
+        <li class="hi">Claude / GPT upgrade path for hard tasks</li>
+        <li class="hi">Unlimited tasks</li>
+        <li class="hi">Priority compute / bigger sandbox</li>
+        <li class="hi">Pro Mode toggle (harness picker, BYO key, SSH)</li>
+      </ul>
+    </div>
+  </div>
+
+  <p style="margin-top: 24px;"><strong>Key insight:</strong> The login gate is triggered <em>by the agent when it needs something</em>, not by us at the front door. "I need to save our progress →" (tier 01 prompt). "To book this I need a card →" (tier 02 prompt). Grandma never sees a login screen she doesn't understand the reason for.</p>
+</section>
+
+<!-- ============ 03 JOURNEY ============ -->
+<section>
+  <h2><span class="num">03 / THE GRANDMA JOURNEY</span>Land to first value in under 4 seconds. No login in the hot path.</h2>
+  <p>The journey changed in v2. There's no mid-flow sign-in anymore. She types, she sees the agent working, and only if the task requires real-world identity does a login card appear.</p>
+
+  <div class="journey">
+    <div class="j-step"><div class="j-dot">1</div><div class="j-label">LAND</div><div class="j-desc">spoq.ai — one input, four suggestions</div></div>
+    <div class="j-step key"><div class="j-dot">2</div><div class="j-label">TYPE</div><div class="j-desc">"Find me a butter chicken recipe"</div></div>
+    <div class="j-step key"><div class="j-dot">3</div><div class="j-label">RUN</div><div class="j-desc">Agent replies in ~2s · GLM on warm sandbox</div></div>
+    <div class="j-step"><div class="j-dot">4</div><div class="j-label">ASK</div><div class="j-desc">"And order the ingredients?"</div></div>
+    <div class="j-step key"><div class="j-dot">5</div><div class="j-label">GATE</div><div class="j-desc">Agent: "I'll need your account for that →"</div></div>
+    <div class="j-step"><div class="j-dot">6</div><div class="j-label">DONE</div><div class="j-desc">Google One-Tap → card → ordered · confirmation mailed</div></div>
+  </div>
+
+  <div class="journey-script">
+    <span class="usr">grandma</span>  <span class="sys">find me a good butter chicken recipe</span><br>
+    <span class="agent">agent</span>    Found a well-reviewed recipe from Bon Appétit. Want me to walk you through it, or just show you the ingredients list?<br>
+    <span class="usr">grandma</span>  <span class="sys">ingredients list, and can you order them?</span><br>
+    <span class="agent">agent</span>    I can — I'll need to <span class="def">save this to your account</span> first so I have your address. One tap, takes 2 seconds:<br>
+    <span class="usr">grandma</span>  <span class="sys">(taps Google)</span><br>
+    <span class="agent">agent</span>    Saved. For the grocery order, I'll also need a card:<br>
+    <span class="usr">grandma</span>  <span class="sys">(taps Apple Pay)</span><br>
+    <span class="agent">agent</span>    Ordered. Arrives Tuesday 6pm. Confirmation in your Gmail.
+  </div>
+</section>
+
+<!-- ============ 04 ONBOARDING SCREENS ============ -->
+<section>
+  <h2><span class="num">04 / ONBOARDING SCREENS</span>Five frames. Zero login prompts until an action requires one.</h2>
+  <p>The onboarding <em>is</em> the product. No wizards, no tours, no feature modals. She types, the agent runs. Screen 04 is the only place a login card appears — and only because the next step needs identity.</p>
+
+  <div class="screens">
+    <div class="screen">
+      <div class="screen-label">01 · LAND</div>
+      <div class="screen-frame">
+        <div class="screen-url">spoq.ai</div>
+        <div class="screen-body s-landing">
+          <div class="title">What do you need done?</div>
+          <div class="input">Ask SPOQ anything…</div>
+          <div class="chips">
+            <span class="chip">Butter chicken recipe</span>
+            <span class="chip">Research solar panels</span>
+            <span class="chip">Plan a birthday</span>
+            <span class="chip">Book a flight</span>
+          </div>
+        </div>
+      </div>
+      <div class="screen-note">One question. One input. No "sign up." No "pricing." Four prompts to seed the imagination.</div>
+    </div>
+
+    <div class="screen">
+      <div class="screen-label">02 · TYPE</div>
+      <div class="screen-frame">
+        <div class="screen-url">spoq.ai</div>
+        <div class="screen-body s-landing">
+          <div class="title">What do you need done?</div>
+          <div class="input filled">find me a butter chicken recipe</div>
+          <div style="font-size: 9px; color: var(--text-faint); margin-top: 8px;">Press enter to go →</div>
+        </div>
+      </div>
+      <div class="screen-note"><strong>No login prompt.</strong> She hits enter, the sandbox is already warm, and GLM-Claude-Code starts before she finishes blinking.</div>
+    </div>
+
+    <div class="screen">
+      <div class="screen-label">03 · RUN</div>
+      <div class="screen-frame">
+        <div class="screen-url">spoq.ai/c/9f3a</div>
+        <div class="screen-body s-running">
+          <div class="s-bubble user">butter chicken recipe</div>
+          <div class="s-bubble agent">Found a good one from Bon Appétit…</div>
+          <div class="s-browser">
+            <div class="s-browser-bar">▶ bonappetit.com</div>
+            <div class="s-browser-content">Butter Chicken<br>Serves 4<br>Prep 20m · Cook 40m</div>
+          </div>
+        </div>
+      </div>
+      <div class="screen-note">Live browser appears ambient. ~2s from enter to first token. Zero sign-ins. This is the demo moment.</div>
+    </div>
+
+    <div class="screen">
+      <div class="screen-label">04 · GATE</div>
+      <div class="screen-frame">
+        <div class="screen-url">spoq.ai/c/9f3a</div>
+        <div class="screen-body s-running">
+          <div class="s-bubble user">can you order the ingredients?</div>
+          <div class="s-bubble agent">I'll need your account — one tap:</div>
+          <div class="s-jit"> Continue with Google →</div>
+          <div class="s-bubble agent" style="font-size: 7px; color: var(--text-faint);">(We need this to remember you &amp; your address)</div>
+        </div>
+      </div>
+      <div class="screen-note">First login prompt appears <em>only when the task requires identity</em>. The agent explains why in plain English.</div>
+    </div>
+
+    <div class="screen">
+      <div class="screen-label">05 · DONE</div>
+      <div class="screen-frame">
+        <div class="screen-url">spoq.ai/c/9f3a</div>
+        <div class="screen-body s-running">
+          <div class="s-bubble agent">Ordered. Arrives Tue 6pm.</div>
+          <div class="s-bubble agent">Receipt in your Gmail.</div>
+          <div class="s-continue">What else can I help with?</div>
+        </div>
+      </div>
+      <div class="screen-note">No celebration modal. Just the outcome. Her account, card, and sandbox now persist — next return is 0.9s.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 05 INTERFACE + LAWS ============ -->
+<section>
+  <h2><span class="num">05 / THE INTERFACE</span>Three zones + six laws. Everything else follows.</h2>
+  <p>Threads left, chat center, live artifacts right. Agent speaks first-person plain English even when Claude Code is doing the work underneath. Six laws below are non-negotiable; every screen gets reviewed against them.</p>
+
+  <div class="interface">
+    <div class="iface-rail">
+      <div class="logo">SPOQ</div>
+      <div class="new-chat">+ New task</div>
+      <div class="thread-list">
+        <div class="thread active">Butter chicken order</div>
+        <div class="thread">Flight to Delhi</div>
+        <div class="thread">Birthday plan · Anya</div>
+        <div class="thread">Research: solar panels</div>
+      </div>
+      <div class="settings">⚙  Settings</div>
+    </div>
+    <div class="iface-main">
+      <div class="iface-title">Butter chicken order</div>
+      <div class="iface-thread">
+        <div class="iface-bubble user">butter chicken recipe, and order ingredients</div>
+        <div class="iface-bubble agent">Found <strong>Bon Appétit's recipe</strong>. 11 ingredients total. Want me to add them to an Instacart order?</div>
+        <div class="iface-bubble user">yes</div>
+        <div class="iface-jit">+ Continue with Google &nbsp; · &nbsp; + Add a card</div>
+      </div>
+      <div class="iface-input">Reply…</div>
+    </div>
+    <div class="iface-panel">
+      <div class="iface-panel-tabs">
+        <span class="iface-panel-tab active">BROWSER</span>
+        <span class="iface-panel-tab">FILES</span>
+        <span class="iface-panel-tab">RECEIPTS</span>
+      </div>
+      <div class="iface-browser-frame">
+        <div class="iface-browser-url">▶ instacart.com/cart</div>
+        <div>Cart · 11 items<br><br>✓ Chicken thighs · $12.40<br>✓ Butter · $5.20<br>✓ Heavy cream · $4.10<br>✓ Garam masala · $6.80<br>✓ Tomato purée · $3.50<br>  + 6 more</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="iface-annotations">
+    <div><h4>Left · threads</h4><p>Every task is a thread, named in plain English by the agent. Grandma recognises "Butter chicken order," not "session_abc123."</p></div>
+    <div><h4>Center · conversation</h4><p>First-person agent. No code blocks, no markdown, no "executing tool." Inline approval cards when an action needs a tap.</p></div>
+    <div><h4>Right · what it's doing</h4><p>Live browser feed by default. Switches to files, receipts, photos as the task evolves. Ambient — ignore it or peek.</p></div>
+  </div>
+
+  <div class="design-laws-head">
+    <h3>Six design laws</h3>
+    <span class="sub">non-negotiable</span>
+  </div>
+  <div class="design-laws">
+    <div><div class="design-law-num">LAW 01</div><div class="design-law-rule">No jargon, ever.</div><div class="design-law-desc">"Harness," "agent," "API," "LLM," "MCP," "sandbox," "tool," "model" — none on the default surface. Pro mode may use them. Main UI cannot.</div></div>
+    <div><div class="design-law-num">LAW 02</div><div class="design-law-rule">Every button is a verb.</div><div class="design-law-desc">"Book now," "Add card," "Send message." Never "Continue," "Submit," "Confirm," "OK." A verb plus a thing.</div></div>
+    <div><div class="design-law-num">LAW 03</div><div class="design-law-rule">The agent talks like a person.</div><div class="design-law-desc">First person, no status codes, no JSON, no backticks. Even when Claude Code is running, the user sees plain English.</div></div>
+    <div><div class="design-law-num">LAW 04</div><div class="design-law-rule">Every error is a sentence an apology could follow.</div><div class="design-law-desc">"I couldn't find flights on that date — try another?" Not "500 Internal Server Error." Never show a stack trace or error code.</div></div>
+    <div><div class="design-law-num">LAW 05</div><div class="design-law-rule">Resources appear only when needed.</div><div class="design-law-desc">Phone, email, card, login — never up-front. Only when the agent needs one to make progress. One tap to approve.</div></div>
+    <div><div class="design-law-num">LAW 06</div><div class="design-law-rule">The grandma test is binding.</div><div class="design-law-desc">Before any screen ships: could a 60-year-old explain to a neighbour what this screen does, using only what's visible? If not, rebuild.</div></div>
+  </div>
+</section>
+
+<!-- ============ 06 ARCHITECTURE ============ -->
+<section>
+  <h2><span class="num">06 / ARCHITECTURE</span>Claude Code → GLM over Anthropic-compatible endpoint. Thin portal. No AI logic in our code.</h2>
+  <p>The trick is that GLM-4.5 / 4.6 ship Anthropic-compatible <span class="mono">/v1/messages</span> endpoints. We just set <span class="mono">ANTHROPIC_BASE_URL</span> and Claude Code runs unmodified against GLM. Fallback if that fails: LiteLLM proxy translates Anthropic → OpenAI for GLM.</p>
+
+  <div class="arch">
+    <div class="arch-diagram">
+<span class="tx">┌─────────────────────────────┐</span>
+<span class="tx">│  browser (user)              </span>│
+<span class="tx">│  one-box UI, no sign-in wall </span>│
+<span class="tx">└──────────────┬──────────────┘</span>
+               │
+               ▼
+<span class="hl">┌─────────────────────────────┐</span>
+<span class="hl">│  SPOQ PORTAL (Next.js)       </span>│
+<span class="hl">│  • Turnstile + rate limit    </span>│
+<span class="hl">│  • anon/identified/paid gate </span>│
+<span class="hl">│  • streams harness output    </span>│
+<span class="hl">│  • embeds browser feed       </span>│
+<span class="hl">└──────────────┬──────────────┘</span>
+               │
+         ┌─────┼───────┬──────────┐
+         ▼     ▼       ▼          ▼
+<span class="tx">   [Orb]  [Stripe] [Twilio]  [Resend]
+   sandbox  card+bill  phone     email</span>
+         │
+         ▼
+<span class="tx">┌─────────────────────────────┐</span>
+<span class="tx">│  OrbCloud sandbox            </span>│
+<span class="tx">│  claude-code CLI (default)   </span>│
+<span class="hl">│  ANTHROPIC_BASE_URL=GLM      </span>│
+<span class="tx">│  + orb-browser               </span>│
+<span class="tx">└──────────────┬──────────────┘</span>
+               │
+               ▼
+<span class="hl">┌─────────────────────────────┐</span>
+<span class="hl">│  GLM-4.6 /v1/messages        </span>│
+<span class="hl">│  (anthropic-compat)          </span>│
+<span class="hl">│  · cheap · fast · smart      </span>│
+<span class="hl">└─────────────────────────────┘</span>
+    </div>
+
+    <div class="stack">
+      <div class="stack-row"><div class="stack-layer">Frontend</div><div class="stack-val">Next.js 15 · App Router · TS<span class="vendor">Tailwind</span></div></div>
+      <div class="stack-row"><div class="stack-layer">Auth</div><div class="stack-val">Google OAuth · One-Tap<span class="vendor">Clerk</span></div></div>
+      <div class="stack-row"><div class="stack-layer">DB</div><div class="stack-val">Postgres<span class="vendor">Supabase</span></div></div>
+      <div class="stack-row"><div class="stack-layer">Billing</div><div class="stack-val">Subscriptions + cards<span class="vendor">Stripe</span></div></div>
+      <div class="stack-row"><div class="stack-layer">Abuse</div><div class="stack-val">Invisible captcha<span class="vendor">Cloudflare Turnstile</span></div></div>
+      <div class="stack-row"><div class="stack-layer">Compute</div><div class="stack-val">Sandbox per user<span class="vendor">OrbCloud</span></div></div>
+      <div class="stack-row"><div class="stack-layer">Harness</div><div class="stack-val">claude-code CLI · pre-installed<span class="vendor">Anthropic OSS</span></div></div>
+      <div class="stack-row"><div class="stack-layer">Inference</div><div class="stack-val">GLM-4.6 anthropic-compat endpoint<span class="vendor">Zhipu</span></div></div>
+      <div class="stack-row"><div class="stack-layer">Fallback</div><div class="stack-val">Anthropic-to-OpenAI shim<span class="vendor">LiteLLM</span></div></div>
+      <div class="stack-row"><div class="stack-layer">Realtime</div><div class="stack-val">SSE for stdout stream</div></div>
+      <div class="stack-row"><div class="stack-layer">Observability</div><div class="stack-val">Funnels + errors<span class="vendor">PostHog · Sentry</span></div></div>
+      <div class="stack-row"><div class="stack-layer">Hosting</div><div class="stack-val">Portal: Vercel · Sandboxes: OrbCloud</div></div>
+    </div>
+  </div>
+
+  <h3 style="margin-top: 48px; color: var(--text); font-weight: 400;">Five limbs, five vendors</h3>
+  <div class="limbs-vendor">
+    <div class="limb-card">
+      <div class="limb-head"><svg class="limb-svg" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="1"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><div class="limb-title">Computer</div></div>
+      <div class="limb-vendor">OrbCloud</div>
+      <div class="limb-detail">Sandbox per user. Shared pool for anon. 0.9s wake from cold-store.</div>
+    </div>
+    <div class="limb-card">
+      <div class="limb-head"><svg class="limb-svg" viewBox="0 0 24 24"><path d="M4 5 Q 4 3 6 3 L 8 3 L 10 8 L 8 10 Q 11 15 14 16 L 16 14 L 21 16 L 21 18 Q 21 20 19 20 Q 10 20 4 14 Q 4 5 4 5 Z"/></svg><div class="limb-title">Phone</div></div>
+      <div class="limb-vendor">Twilio</div>
+      <div class="limb-detail">Real number on request. SMS in/out, voice optional. OTPs, confirmations.</div>
+    </div>
+    <div class="limb-card">
+      <div class="limb-head"><svg class="limb-svg" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="1"/><polyline points="3 7 12 13 21 7"/></svg><div class="limb-title">Email</div></div>
+      <div class="limb-vendor">Resend</div>
+      <div class="limb-detail">Subaddress per user (user123@agent.spoq.ai). Inbound webhook to harness.</div>
+    </div>
+    <div class="limb-card">
+      <div class="limb-head"><svg class="limb-svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="3" y1="12" x2="21" y2="12"/><path d="M12 3 Q 7 12 12 21 Q 17 12 12 3"/></svg><div class="limb-title">Browser</div></div>
+      <div class="limb-vendor">Orb Browser</div>
+      <div class="limb-detail">Already in production. Live session URL embedded as iframe in artifact panel.</div>
+    </div>
+    <div class="limb-card">
+      <div class="limb-head"><svg class="limb-svg" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="1"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="7" y1="15" x2="11" y2="15"/></svg><div class="limb-title">Card</div></div>
+      <div class="limb-vendor">Stripe Issuing</div>
+      <div class="limb-detail">Virtual card per user, spending limits, approval push for large amounts.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 07 MONETIZATION ============ -->
+<section>
+  <h2><span class="num">07 / MONETIZATION</span>Three tiers. Users pay us. They never see a provider bill.</h2>
+  <p>Free tier runs on GLM (cheap). Plus tier is priced to subsidize GLM generously and route hard tasks to Claude. Developer tier is for the 1% who want the raw controls — priced higher, unlocks everything.</p>
+
+  <div class="monetize">
+    <div>
+      <div class="mon-label hi">FREE</div>
+      <div class="mon-title">GLM-powered, login-gated actions</div>
+      <div class="mon-body">
+        Anonymous: 3 tasks/IP/day, info-only.<br><br>
+        Identified (Google sign-in): unlimited info tasks, persistent sandbox, phone/email on request, no card.<br><br>
+        Subsidized by: GLM's low per-token cost. Break-even even on heavy free users.
+      </div>
+    </div>
+    <div>
+      <div class="mon-label">PLUS &nbsp;·&nbsp; $15/mo</div>
+      <div class="mon-title">When the agent spends money</div>
+      <div class="mon-body">
+        Virtual card issued via Stripe. Automatic Claude/GPT upgrade for complex agentic tasks. Unlimited task volume. Priority sandbox. This is the mainstream paid tier — pitched as "your AI assistant with a credit card."
+      </div>
+    </div>
+    <div>
+      <div class="mon-label">DEVELOPER &nbsp;·&nbsp; $49/mo</div>
+      <div class="mon-title">Pro mode switch</div>
+      <div class="mon-body">
+        Everything in Plus, plus: harness picker (Claude Code / Codex / Gemini CLI / Aider), BYO API key (save ~40% on inference), SSH to sandbox, custom MCP server uploads. Off by default, never affects default UX.
+      </div>
+    </div>
+    <div>
+      <div class="mon-label hi">WHY USERS PAY US, NOT OPENAI</div>
+      <div class="mon-title">One card, one bill, one thing that works</div>
+      <div class="mon-body">
+        Grandma doesn't want to manage API keys across 4 providers. She wants to pay one service and have things happen. SPOQ absorbs the mess: we negotiate volume rates with Zhipu / Anthropic / Stripe / Twilio / Resend and charge a flat monthly rate on top.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 08 VERIFICATION LOOPS ============ -->
+<section>
+  <h2><span class="num">08 / VERIFICATION LOOPS</span>Every phase has a gate. Every task has a judge. Every regression alerts.</h2>
+  <p>"Strong verification loop" means: we don't ship a phase without passing a test, we don't trust the agent without a judge, and we don't deploy without a canonical task suite running against prod. Four loops, all automated, all visible.</p>
+
+  <div class="verif-grid">
+    <div class="verif-cell">
+      <h4>Loop 01 &nbsp;·&nbsp; per-phase gate</h4>
+      <div class="when">When: end of each roadmap phase</div>
+      <div class="rule">Phase doesn't ship without a demo-able outcome + a smoke test.</div>
+      <p>Phase 0 gates the entire project (GLM + Claude Code spike). Each later phase has a specific assertion: "sandbox spawns in &lt;2s," "agent replies to 10/10 canonical tasks," "JIT resource UX is one-tap." Fail = rebuild.</p>
+    </div>
+    <div class="verif-cell">
+      <h4>Loop 02 &nbsp;·&nbsp; canonical task suite</h4>
+      <div class="when">When: every 6 hours against production</div>
+      <div class="rule">20 real grandma tasks run continuously. Success rate ≥ 85% or alert.</div>
+      <p>GitHub Actions cron spawns a test account, runs all 20 tasks sequentially, records reply latency + tool-use success + task completion. Results posted to a dashboard and a Discord channel.</p>
+    </div>
+    <div class="verif-cell">
+      <h4>Loop 03 &nbsp;·&nbsp; LLM judge</h4>
+      <div class="when">When: every completed run, test + live</div>
+      <div class="rule">A Claude Opus judge grades every task: did the agent actually do what was asked?</div>
+      <p>Judge sees the full transcript + final artifact (receipt, file, URL). Binary grade per task, with a written rationale. Cheap per-judgment (~$0.02). Catches subtle regressions that pass/fail tests miss.</p>
+    </div>
+    <div class="verif-cell">
+      <h4>Loop 04 &nbsp;·&nbsp; grandma review</h4>
+      <div class="when">When: before any UI change ships</div>
+      <div class="rule">A non-technical person tries the screen cold. If they fumble, the screen rebuilds.</div>
+      <p>Sam's dad (60yo, Delhi) is the canonical tester. Each UI change is recorded as a short Loom of him using it. Friction = feedback, shipped with the PR.</p>
+    </div>
+  </div>
+
+  <div class="canonical">
+    <h4>The 20 canonical grandma tasks</h4>
+    <div class="canonical-list">
+      <div><span class="cat">info</span>Find a butter chicken recipe and list ingredients</div>
+      <div><span class="cat">info</span>Explain solar panels in 3 sentences</div>
+      <div><span class="cat">info</span>What's the weather in Delhi next Tuesday?</div>
+      <div><span class="cat">info</span>Research best electric kettles under $100</div>
+      <div><span class="cat">info</span>Translate this to Hindi: "Happy birthday, grandpa"</div>
+      <div><span class="cat">info</span>Summarise this article for me [URL]</div>
+      <div><span class="cat">info</span>When is Diwali in 2026?</div>
+      <div><span class="cat">info</span>Find me a doctor near me who speaks Gujarati</div>
+      <div><span class="cat">info</span>How do I use WhatsApp to send a voice message?</div>
+      <div><span class="cat">info</span>What's a good birthday gift for a 7-year-old?</div>
+      <div><span class="cat">plan</span>Plan a 3-day itinerary for Goa</div>
+      <div><span class="cat">plan</span>Plan my daughter's 7th birthday party</div>
+      <div><span class="cat">plan</span>Draft a WhatsApp message to invite 10 people</div>
+      <div><span class="cat">plan</span>Make a shopping list for a dinner party for 6</div>
+      <div><span class="cat">action</span>Book a flight SFO → DEL next Tuesday</div>
+      <div><span class="cat">action</span>Order ingredients for butter chicken via Instacart</div>
+      <div><span class="cat">action</span>Send a birthday card to my sister via email</div>
+      <div><span class="cat">action</span>Buy tickets to this movie at my local theatre</div>
+      <div><span class="cat">action</span>Reschedule my dentist appointment</div>
+      <div><span class="cat">action</span>Reply to this email and send it from my Gmail</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 09 ROADMAP ============ -->
+<section>
+  <h2><span class="num">09 / ROADMAP</span>Nine phases, ~8 weeks. Phase 0 is the go/no-go gate.</h2>
+  <p>Phase 0 is a 1-day spike that decides the entire stack. If Claude Code + GLM work, everything else is a thin portal around them. If not, we insert LiteLLM as a proxy before moving on.</p>
+
+  <div class="phases">
+    <div class="phase gate">
+      <div class="phase-num">P 0</div>
+      <div class="phase-name">GLM + Claude Code spike</div>
+      <div class="phase-desc">Set up claude-code locally with <span class="mono">ANTHROPIC_BASE_URL=glm-endpoint</span>. Run 10 of the 20 canonical tasks. Go/no-go: ≥ 8/10 pass with working tool use. No-go path: insert LiteLLM proxy, retest. Full stop on rest of plan until passed.</div>
+      <div class="phase-time">Day 1 · blocker</div>
+      <div class="phase-verify"><span class="lbl">VERIFY</span>manual: 8/10 canonical pass · LLM judge: ≥ 80% rationale-approved · latency: first token &lt; 4s</div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-num">P 1</div>
+      <div class="phase-name">Skeleton + landing</div>
+      <div class="phase-desc">Create AWLSEN/spoq-2.0. Next.js scaffold, Tailwind, design tokens. Landing page with one input + 4 chips. Deploy to staging URL.</div>
+      <div class="phase-time">Week 1</div>
+      <div class="phase-verify"><span class="lbl">VERIFY</span>smoke: Vercel build green · manual: input visible on mobile · grandma: "what do I do?" → types</div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-num">P 2</div>
+      <div class="phase-name">Anonymous run loop</div>
+      <div class="phase-desc">Hit enter → spawn pooled Orb sandbox → run claude-code against GLM → stream SSE back. sessionStorage for history. Turnstile + IP rate limit.</div>
+      <div class="phase-time">Week 1–2</div>
+      <div class="phase-verify"><span class="lbl">VERIFY</span>smoke: 5 tasks in a row succeed · canonical suite (info only): ≥ 16/20 · latency: first token &lt; 4s</div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-num">P 3</div>
+      <div class="phase-name">Deferred login + Identified tier</div>
+      <div class="phase-desc">Google One-Tap. When agent emits <span class="mono">[need-login]</span> marker, portal renders inline card. Sign-in promotes session, binds anon sandbox to user, persists chat history.</div>
+      <div class="phase-time">Week 2–3</div>
+      <div class="phase-verify"><span class="lbl">VERIFY</span>smoke: sign-in in 2 taps from Chrome · manual: anon session survives sign-in · judge: 3 plan-tasks pass end-to-end</div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-num">P 4</div>
+      <div class="phase-name">Five limbs provisioning</div>
+      <div class="phase-desc">Provision APIs for phone (Twilio), email (Resend subaddress), browser (Orb Browser URL), card (Stripe Issuing). All lazy. All appear inline as JIT cards.</div>
+      <div class="phase-time">Week 3–4</div>
+      <div class="phase-verify"><span class="lbl">VERIFY</span>smoke: each limb creates in &lt; 3s · manual: grandma orders something · canonical suite (action): ≥ 3/6 pass</div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-num">P 5</div>
+      <div class="phase-name">Paid tier · Plus</div>
+      <div class="phase-desc">Stripe subscription. $15/mo unlocks card issuing + Claude/GPT upgrade lane for hard tasks. Routing logic: if GLM fails or judge flags low-quality, retry on Claude (Plus only).</div>
+      <div class="phase-time">Week 4–5</div>
+      <div class="phase-verify"><span class="lbl">VERIFY</span>smoke: checkout to card issued &lt; 60s · canonical suite (full): ≥ 17/20 · Claude upgrade triggers on stuck task</div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-num">P 6</div>
+      <div class="phase-name">Pro mode toggle</div>
+      <div class="phase-desc">Settings → Developer Mode. Harness picker (claude-code, codex, aider). BYO key wizard with guided Anthropic console walkthrough. SSH to sandbox.</div>
+      <div class="phase-time">Week 5–6</div>
+      <div class="phase-verify"><span class="lbl">VERIFY</span>smoke: toggle off → picker hidden · smoke: BYO key works · manual: SSH session opens</div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-num">P 7</div>
+      <div class="phase-name">Verification infra</div>
+      <div class="phase-desc">GitHub Actions cron runs 20 canonical tasks every 6h. LLM judge (Claude Opus) scores each. Dashboard + Discord alert. PostHog funnels + Sentry errors wired.</div>
+      <div class="phase-time">Week 6</div>
+      <div class="phase-verify"><span class="lbl">VERIFY</span>smoke: cron runs + posts results · smoke: Discord alert fires on forced failure · dashboard: score visible</div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-num">P 8</div>
+      <div class="phase-name">Launch</div>
+      <div class="phase-desc">Custom domain (spoq.ai), mobile/PWA, voice input, empty-state suggestions, error copy polish. Soft launch to Sam's network, then HN / Twitter. Status page live.</div>
+      <div class="phase-time">Week 7–8</div>
+      <div class="phase-verify"><span class="lbl">VERIFY</span>launch criteria: canonical ≥ 17/20 · first-value &lt; 4s · grandma review: dad completes 2 real tasks unassisted</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 10 REPO + DONE ============ -->
+<section>
+  <h2><span class="num">10 / REPO &amp; DONE BAR</span>Code shape, git rhythm, and the numbers we ship on.</h2>
+
+  <div class="wrap-two">
+    <div class="repo-tree">
+<span class="hl">AWLSEN/spoq-2.0/</span>
+├── <span class="dir">app/</span>                       <span class="cmt"># Next.js App Router</span>
+│   ├── <span class="dir">(marketing)/</span>           <span class="cmt"># landing, pricing</span>
+│   ├── <span class="dir">(chat)/</span>                <span class="cmt"># the portal itself</span>
+│   ├── <span class="dir">api/</span>                   <span class="cmt"># spawn, stream, provision</span>
+│   └── <span class="dir">settings/</span>              <span class="cmt"># pro mode toggles</span>
+├── <span class="dir">components/</span>                <span class="cmt"># ChatBox, JITResource, ...</span>
+├── <span class="dir">lib/</span>
+│   ├── orb.ts                  <span class="cmt"># OrbCloud client</span>
+│   ├── glm.ts                  <span class="cmt"># Anthropic-compat URL</span>
+│   ├── stripe.ts               <span class="cmt"># billing + issuing</span>
+│   ├── twilio.ts, resend.ts    <span class="cmt"># phone, email</span>
+│   └── harness/                <span class="cmt"># harness adapters</span>
+├── <span class="dir">db/</span>                        <span class="cmt"># drizzle schema + migrations</span>
+├── <span class="dir">sandbox-image/</span>             <span class="cmt"># Orb image · claude-code baked in</span>
+├── <span class="hl">tests/canonical/</span>            <span class="cmt"># 20 grandma tasks</span>
+├── <span class="hl">tests/judge/</span>                <span class="cmt"># Opus LLM judge</span>
+├── <span class="dir">.github/workflows/</span>
+│   └── canonical-cron.yml      <span class="cmt"># runs every 6h</span>
+├── <span class="hl">learnings.txt</span>               <span class="cmt"># updated every session end</span>
+├── <span class="hl">PLAN.md</span>                     <span class="cmt"># this doc, in markdown</span>
+└── CLAUDE.md
+    </div>
+
+    <div class="workflow">
+      <div class="workflow-item"><h4>Commit rhythm</h4><p>One small change = one commit. Scaffold a route? Commit. Add a component? Commit. No batching.</p></div>
+      <div class="workflow-item"><h4>Push rhythm</h4><p>Push after <span class="mono-inline">5 commits</span>. Local WIP fluid, remote a bit slower, PRs reviewable.</p></div>
+      <div class="workflow-item"><h4>learnings.txt</h4><p>Lives inside the repo. Updated before each session ends — what we have, what we tried, what didn't work.</p></div>
+      <div class="workflow-item"><h4>Secrets</h4><p>Zhipu/Anthropic/Stripe/Twilio/Resend keys never committed. <span class="mono-inline">.env.local</span> locally, Vercel env vars in prod.</p></div>
+      <div class="workflow-item"><h4>PRs</h4><p>Fresh org repo — commit to <span class="mono-inline">main</span> on small changes, short-lived feature branches + PRs for bigger ones.</p></div>
+    </div>
+  </div>
+
+  <h3 style="margin-top: 56px; color: var(--text); font-weight: 400;">What "done" means for v1 launch</h3>
+  <div class="metrics">
+    <div class="metric">
+      <div class="metric-label">Time to first value</div>
+      <div class="metric-num">&lt; 4<span class="unit">s</span></div>
+      <div class="metric-desc">Landing → typed task → first agent token. Zero login in between.</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Decisions to first task</div>
+      <div class="metric-num">1</div>
+      <div class="metric-desc">Just "type." No sign-in, no pricing page, no harness pick. Lowest of any AI portal.</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Words grandma sees</div>
+      <div class="metric-num">0</div>
+      <div class="metric-desc">Occurrences of "harness/agent/API/CLI/MCP/LLM" in the default UI.</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Canonical pass rate</div>
+      <div class="metric-num">≥ 85<span class="unit">%</span></div>
+      <div class="metric-desc">20 grandma tasks running every 6h against prod. Judge-verified.</div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div>AWLSEN / ORBCLOUD &nbsp;·&nbsp; CONFIDENTIAL</div>
+  <div>SPOQ 2.0 · PLAN v2 · READY FOR DAY 1</div>
+</footer>
+
+</body>
+</html>
