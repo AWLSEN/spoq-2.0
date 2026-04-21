@@ -94,19 +94,23 @@ export default function ChatSession() {
             const ev = JSON.parse(payload);
             if (ev.kind === "stdout_clean") {
               setItems((prev) => {
-                const copy = [...prev];
-                const last = copy[copy.length - 1];
-                if (last && last.kind === "agent") last.text += ev.chunk;
-                return copy;
+                const last = prev[prev.length - 1];
+                if (!last || last.kind !== "agent") return prev;
+                return [
+                  ...prev.slice(0, -1),
+                  { ...last, text: last.text + ev.chunk },
+                ];
               });
             } else if (ev.kind === "capability_request") {
               setItems((prev) => [...prev, { kind: "capability", request: ev.request }]);
             } else if (ev.kind === "error") {
               setItems((prev) => {
-                const copy = [...prev];
-                const last = copy[copy.length - 1];
-                if (last && last.kind === "agent") last.text += `\n\n[error: ${ev.message}]`;
-                return copy;
+                const last = prev[prev.length - 1];
+                if (!last || last.kind !== "agent") return prev;
+                return [
+                  ...prev.slice(0, -1),
+                  { ...last, text: last.text + `\n\n[error: ${ev.message}]` },
+                ];
               });
             }
           } catch {
@@ -117,10 +121,12 @@ export default function ChatSession() {
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       setItems((prev) => {
-        const copy = [...prev];
-        const last = copy[copy.length - 1];
-        if (last && last.kind === "agent") last.text += `\n\n[error: ${msg}]`;
-        return copy;
+        const last = prev[prev.length - 1];
+        if (!last || last.kind !== "agent") return prev;
+        return [
+          ...prev.slice(0, -1),
+          { ...last, text: last.text + `\n\n[error: ${msg}]` },
+        ];
       });
     } finally {
       setRunning(false);
