@@ -30,3 +30,25 @@ Two backends / stale token. Not a blocker — Phase 2 uses a LOCAL SUBPROCESS
 sandbox (spawn `claude -p` in a per-session temp workdir) which exactly matches
 the code path Phase 0 validated. Orb integration deferred to an adapter slot
 (`lib/sandbox/orb.ts`) and can be flipped on once auth is sorted.
+
+2026-04-21 — Phase 6 baseline: 36/40 = 90% PASS.
+Canonical suite + GLM self-judge. 18/20 scored 2/2. Two tasks (c02_translate,
+c04_solar) hit the 120s timeout with empty output — same prompts had passed
+fine 10 minutes earlier during Phase 2 verify. Concluded transient GLM stalls
+on free tier. Added retry-with-backoff (2 retries) + 90s base timeout in the
+canonical runner. Expect steady-state ≥95%.
+
+For real production canonical grading, set ANTHROPIC_JUDGE_KEY so the judge
+uses Claude Opus (claude-opus-4-7) via api.anthropic.com instead of GLM
+self-judging its own output.
+
+Phase 3/4/5/7/8 all need external service credentials. STOP here and get
+keys from user:
+  - Clerk: CLERK_PUBLISHABLE_KEY + CLERK_SECRET_KEY + GOOGLE_CLIENT_ID
+  - Twilio: TWILIO_ACCOUNT_SID + TWILIO_AUTH_TOKEN (+ purchase number)
+  - Resend: RESEND_API_KEY (+ verified domain)
+  - Stripe: STRIPE_SECRET_KEY + price IDs + Issuing cardholder
+  - PostHog: NEXT_PUBLIC_POSTHOG_KEY
+  - Sentry: SENTRY_DSN
+  - Anthropic (for upgraded judge): ANTHROPIC_JUDGE_KEY
+  - Orb: re-auth on the right backend (api.orbcloud.dev token)

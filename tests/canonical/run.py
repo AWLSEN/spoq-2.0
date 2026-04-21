@@ -34,23 +34,37 @@ def load_env() -> dict:
     return env
 
 
-def run_one(task: dict, env: dict, timeout: int = 120) -> dict:
-    start = time.time()
+def _invoke(prompt: str, env: dict, timeout: int) -> tuple[int, str, str]:
     try:
         proc = subprocess.run(
-            ["claude", "-p", task["prompt"], "--dangerously-skip-permissions"],
+            ["claude", "-p", prompt, "--dangerously-skip-permissions"],
             env=env,
             capture_output=True,
             text=True,
             timeout=timeout,
         )
-        exit_code = proc.returncode
-        stdout = proc.stdout
-        stderr = proc.stderr
+        return proc.returncode, proc.stdout, proc.stderr
     except subprocess.TimeoutExpired:
-        exit_code = -1
-        stdout = ""
-        stderr = f"TIMEOUT after {timeout}s"
+        return -1, "", f"TIMEOUT after {timeout}s"
+
+
+def run_one(task: dict, env: dict, timeout: int = 90, retries: int = 2) -> dict:
+    """
+    Invoke claude-code with a per-task timeout. On timeout or empty output,
+    retry up to `retries` times. GLM occasionally stalls on the free tier;
+    retry papers over that cleanly.
+    """
+    start = time.time()
+    exit_code, stdout, stderr = -1, "", ""
+    attempts = 0
+    for attempt in range(retries + 1):
+        attempts = attempt + 1
+        exit_code, stdout, stderr = _invoke(task["prompt"], env, timeout)
+        if exit_code == 0 and len(stdout.strip()) >= 20:
+            break
+        # brief backoff before retry
+        if attempt < retries:
+            time.sleep(2 * (attempt + 1))
     duration = round(time.time() - start, 2)
     return {
         "task_id": task["id"],
@@ -61,6 +75,7 @@ def run_one(task: dict, env: dict, timeout: int = 120) -> dict:
         "duration_s": duration,
         "output_len": len(stdout),
         "output": stdout,
+        "attempts": attempts,
         "stderr": stderr[:2000],
     }
 
