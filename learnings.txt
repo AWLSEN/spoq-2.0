@@ -5,3 +5,20 @@ SPOQ 2.0 learnings
 GLM key recalled from orb-async-dev/.env (ANTHROPIC_AUTH_TOKEN=3d37cd7a...).
 Claude Code CLI installed at /Users/sam/.local/bin/claude (v2.1.116).
 GitHub auth active as nextbysam. Will create AWLSEN/spoq-2.0 public repo.
+
+2026-04-21 — Phase 0 PASS.
+5/5 canonical tasks exit=0 via GLM-4.6 + Claude Code CLI.
+Mean duration 13.7s. Tool-calling works (t2_code wrote a real file).
+See phase0-spike/RESULT.md. GO decision — proceed to Phase 1.
+
+Key env recipe (locked):
+  ANTHROPIC_AUTH_TOKEN=<glm key>
+  ANTHROPIC_BASE_URL=https://api.z.ai/api/anthropic
+  ANTHROPIC_DEFAULT_OPUS_MODEL=GLM-4.6
+  API_TIMEOUT_MS=3000000
+
+Gotchas to remember:
+- Avoid bash heredoc + python for JSON emission; use pure-Python runner.
+- `claude -p "<prompt>" --dangerously-skip-permissions` is the headless incantation.
+- Claude Code defaults cwd to the current dir — the t2_code task created reverse_string.py
+  in the repo root. For Phase 2 sandboxes, each session needs its own workdir.

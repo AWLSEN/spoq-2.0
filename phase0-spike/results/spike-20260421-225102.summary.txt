@@ -1,0 +1,19 @@
+=== SPOQ 2.0 Phase 0 Spike ===
+Timestamp: 20260421-225102
+Base URL : https://api.z.ai/api/anthropic
+Model    : GLM-4.6
+Task count: 5
+
+[1/5] t1_recipe (info)
+  exit=0 duration=21.27s len=603 status=ok
+[2/5] t2_code (code)
+  exit=0 duration=27.4s len=391 status=ok
+[3/5] t3_translate (translate)
+  exit=0 duration=4.88s len=112 status=ok
+[4/5] t4_plan (plan)
+  exit=0 duration=10.07s len=2121 status=ok
+[5/5] t5_info (info)
+  exit=0 duration=4.94s len=502 status=ok
+
+Status summary: 5/5 ran cleanly (ok)
+Results: /Users/sam/workspaces/programming/spoq-2.0/phase0-spike/results/spike-20260421-225102.jsonl
