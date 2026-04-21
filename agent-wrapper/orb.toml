@@ -1,0 +1,38 @@
+version = "0.1"
+
+[computer]
+name = "spoq-dev-sam"
+runtime_mb = 2048
+disk_mb = 8192
+
+[source]
+url = "https://github.com/AWLSEN/spoq-2.0"
+branch = "main"
+
+[build]
+working_dir = "agent-wrapper"
+steps = [
+  "npm install -g @anthropic-ai/claude-code@2.1.116",
+  "npm install --omit=dev",
+]
+
+[agent]
+lang = "node"
+entry = "server.js"
+args = []
+
+[llm]
+provider = "custom"
+base_url = "https://api.z.ai/api/anthropic"
+
+[[ports]]
+internal = 8000
+public = true
+
+[env]
+ANTHROPIC_BASE_URL = "https://api.z.ai/api/anthropic"
+ANTHROPIC_DEFAULT_OPUS_MODEL = "GLM-4.6"
+API_TIMEOUT_MS = "300000"
+
+[secrets]
+ANTHROPIC_AUTH_TOKEN = "${ANTHROPIC_AUTH_TOKEN}"

@@ -1,4 +1,5 @@
 import { localSandbox } from "./local";
+import { orbSandbox } from "./orb";
 import { Sandbox } from "./types";
 
 export function getSandbox(): Sandbox {
@@ -6,8 +7,8 @@ export function getSandbox(): Sandbox {
   switch (driver) {
     case "local":
       return localSandbox;
-    // case "orb":
-    //   return orbSandbox; // TODO: wire once Orb auth is sorted
+    case "orb":
+      return orbSandbox;
     default:
       return localSandbox;
   }

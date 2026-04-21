@@ -1,0 +1,10 @@
+{
+  "name": "spoq-agent-wrapper",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Long-lived HTTP server that shells out to claude-code on an Orb computer.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  }
+}
