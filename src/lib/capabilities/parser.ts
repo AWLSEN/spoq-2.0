@@ -8,9 +8,10 @@ const ALLOWED: CapabilityKind[] = [
 ];
 
 // <<SPOQ-NEED type="email.send" reason="to send the thank-you email"/>>
-// Tolerant of whitespace and single/double quotes.
+// Tolerant of whitespace, single/double quotes, and both closers:
+//   "/>>", "/>", ">>", ">"  (GLM occasionally emits only one ">")
 const TOKEN_RE =
-  /<<SPOQ-NEED\s+type=["']([^"']+)["']\s+reason=["']([^"']*)["']\s*\/?>>/g;
+  /<<SPOQ-NEED\s+type=["']([^"']+)["']\s+reason=["']([^"']*)["']\s*\/?>+/g;
 
 export interface ParsedOutput {
   /** Output with all capability tokens stripped. */
