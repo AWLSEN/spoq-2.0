@@ -52,3 +52,28 @@ keys from user:
   - Sentry: SENTRY_DSN
   - Anthropic (for upgraded judge): ANTHROPIC_JUDGE_KEY
   - Orb: re-auth on the right backend (api.orbcloud.dev token)
+
+2026-04-22 — Correction from Sam: don't list keys as prereqs.
+The plan was always dynamic/JIT — the agent asks for a capability only when
+the task hits it, then the portal surfaces an inline "connect X?" prompt.
+Reframed: we don't need ANY external creds to keep building. Build the
+capability REQUEST PROTOCOL with stub handlers; real services wire up per
+capability later, only when a canonical task actually trips them.
+
+Shipped the JIT protocol:
+  - System preamble (buildSystemPreamble) teaches the agent to emit
+    <<SPOQ-NEED type="identity|email.send|phone.sms|card.charge" reason="..."/>>
+    only when the task genuinely needs the capability.
+  - Sandbox run() now accepts appendSystemPrompt → wired via claude-code's
+    --append-system-prompt flag.
+  - /api/chat parses SSE stdout, strips tokens from user-visible text, emits
+    { kind: "capability_request", request } events.
+  - JITResource component renders inline "Connect / Skip" prompt.
+  - On connect, client stubs a label (stubConnect) and re-sends the full
+    conversation with caps state set so the agent sees the capability listed
+    under "Already connected:" in the preamble.
+  - verify_jit.py: 3 scenarios (positive, negative, resume) all PASS end-to-end.
+
+Key insight: the canonical suite's c05 (write thank-you email) correctly
+does NOT trip email.send — it's pure drafting. The "send email to Priya"
+task DOES trip it. The preamble's drafting-vs-sending distinction works.

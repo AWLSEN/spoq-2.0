@@ -2,15 +2,27 @@
 
 import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import JITResource from "./JITResource";
+import { stubConnect } from "@/lib/capabilities/stub-handlers";
+import {
+  CapabilityKind,
+  CapabilityRequest,
+  CapabilityState,
+  DEFAULT_CAPABILITY_STATE,
+} from "@/lib/capabilities/types";
 
-type Msg = { role: "user" | "agent"; text: string; done?: boolean };
+type Item =
+  | { kind: "user"; text: string }
+  | { kind: "agent"; text: string }
+  | { kind: "capability"; request: CapabilityRequest; resolved?: "connected" | "skipped" };
 
 export default function ChatSession() {
   const params = useSearchParams();
   const q = params.get("q") ?? "";
-  const [messages, setMessages] = useState<Msg[]>([]);
+  const [items, setItems] = useState<Item[]>([]);
   const [input, setInput] = useState("");
   const [running, setRunning] = useState(false);
+  const [caps, setCaps] = useState<CapabilityState>(DEFAULT_CAPABILITY_STATE);
   const startedRef = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -24,10 +36,27 @@ export default function ChatSession() {
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [items]);
 
-  async function send(text: string) {
-    setMessages((m) => [...m, { role: "user", text }, { role: "agent", text: "" }]);
+  function conversationForApi(upToUserText: string) {
+    const history: { role: "user" | "agent"; text: string }[] = [];
+    for (const it of items) {
+      if (it.kind === "user") history.push({ role: "user", text: it.text });
+      else if (it.kind === "agent" && it.text.trim())
+        history.push({ role: "agent", text: it.text });
+    }
+    history.push({ role: "user", text: upToUserText });
+    return history;
+  }
+
+  async function send(text: string, capsOverride?: CapabilityState) {
+    const activeCaps = capsOverride ?? caps;
+    const messagesForApi = conversationForApi(text);
+    setItems((prev) => [
+      ...prev,
+      { kind: "user", text },
+      { kind: "agent", text: "" },
+    ]);
     setInput("");
     setRunning(true);
 
@@ -35,11 +64,12 @@ export default function ChatSession() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ message: text }),
+        body: JSON.stringify({
+          messages: messagesForApi,
+          capabilities: activeCaps,
+        }),
       });
-      if (!res.ok || !res.body) {
-        throw new Error(`http ${res.status}`);
-      }
+      if (!res.ok || !res.body) throw new Error(`http ${res.status}`);
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -58,18 +88,20 @@ export default function ChatSession() {
           if (!payload) continue;
           try {
             const ev = JSON.parse(payload);
-            if (ev.kind === "stdout") {
-              setMessages((m) => {
-                const copy = [...m];
+            if (ev.kind === "stdout_clean") {
+              setItems((prev) => {
+                const copy = [...prev];
                 const last = copy[copy.length - 1];
-                if (last.role === "agent") last.text += ev.chunk;
+                if (last && last.kind === "agent") last.text += ev.chunk;
                 return copy;
               });
+            } else if (ev.kind === "capability_request") {
+              setItems((prev) => [...prev, { kind: "capability", request: ev.request }]);
             } else if (ev.kind === "error") {
-              setMessages((m) => {
-                const copy = [...m];
+              setItems((prev) => {
+                const copy = [...prev];
                 const last = copy[copy.length - 1];
-                if (last.role === "agent") last.text += `\n\n[error: ${ev.message}]`;
+                if (last && last.kind === "agent") last.text += `\n\n[error: ${ev.message}]`;
                 return copy;
               });
             }
@@ -80,10 +112,10 @@ export default function ChatSession() {
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      setMessages((m) => {
-        const copy = [...m];
+      setItems((prev) => {
+        const copy = [...prev];
         const last = copy[copy.length - 1];
-        if (last.role === "agent") last.text += `\n\n[error: ${msg}]`;
+        if (last && last.kind === "agent") last.text += `\n\n[error: ${msg}]`;
         return copy;
       });
     } finally {
@@ -91,26 +123,104 @@ export default function ChatSession() {
     }
   }
 
+  function markCapabilityResolved(index: number, resolved: "connected" | "skipped") {
+    setItems((prev) => {
+      const copy = [...prev];
+      const it = copy[index];
+      if (it && it.kind === "capability") copy[index] = { ...it, resolved };
+      return copy;
+    });
+  }
+
+  function connect(index: number, kind: CapabilityKind) {
+    const label = stubConnect(kind);
+    const nextCaps: CapabilityState = {
+      ...caps,
+      [kind]: { state: "connected" as const, label },
+    };
+    setCaps(nextCaps);
+    markCapabilityResolved(index, "connected");
+    send(
+      `(${kind} is now connected as ${label} — please continue.)`,
+      nextCaps
+    );
+  }
+
+  function skip(index: number, kind: CapabilityKind) {
+    const nextCaps: CapabilityState = {
+      ...caps,
+      [kind]: { state: "declined" as const },
+    };
+    setCaps(nextCaps);
+    markCapabilityResolved(index, "skipped");
+    send(
+      `(${kind} was declined — please continue without it, or finish with a draft the user can send manually.)`,
+      nextCaps
+    );
+  }
+
   return (
     <main className="flex flex-1 flex-col px-6 py-8">
       <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6">
-        <a href="/" className="text-sm text-[#6b645a] hover:text-[#1a1a1a] transition-colors w-fit">
+        <a
+          href="/"
+          className="text-sm text-[#6b645a] hover:text-[#1a1a1a] transition-colors w-fit"
+        >
           ← new
         </a>
 
-        <div className="flex-1 flex flex-col gap-6">
-          {messages.map((m, i) => (
-            <div
-              key={i}
-              className={
-                m.role === "user"
-                  ? "self-end max-w-[85%] rounded-2xl bg-[#1a1a1a] px-4 py-3 text-white whitespace-pre-wrap"
-                  : "self-start max-w-[90%] rounded-2xl bg-white border border-[#e7e1d5] px-4 py-3 text-[#1a1a1a] whitespace-pre-wrap"
-              }
-            >
-              {m.text || (m.role === "agent" && running ? "thinking…" : "")}
-            </div>
-          ))}
+        <div className="flex-1 flex flex-col gap-4">
+          {items.map((it, i) => {
+            if (it.kind === "user") {
+              return (
+                <div
+                  key={i}
+                  className="self-end max-w-[85%] rounded-2xl bg-[#1a1a1a] px-4 py-3 text-white whitespace-pre-wrap"
+                >
+                  {it.text}
+                </div>
+              );
+            }
+            if (it.kind === "agent") {
+              return (
+                <div
+                  key={i}
+                  className="self-start max-w-[90%] rounded-2xl bg-white border border-[#e7e1d5] px-4 py-3 text-[#1a1a1a] whitespace-pre-wrap"
+                >
+                  {it.text || (running && i === items.length - 1 ? "thinking…" : "")}
+                </div>
+              );
+            }
+            if (it.resolved === "connected") {
+              return (
+                <div
+                  key={i}
+                  className="self-stretch text-xs text-[#6b645a] italic px-2"
+                >
+                  connected {it.request.kind}
+                </div>
+              );
+            }
+            if (it.resolved === "skipped") {
+              return (
+                <div
+                  key={i}
+                  className="self-stretch text-xs text-[#6b645a] italic px-2"
+                >
+                  skipped {it.request.kind}
+                </div>
+              );
+            }
+            return (
+              <JITResource
+                key={i}
+                request={it.request}
+                onConnect={() => connect(i, it.request.kind)}
+                onSkip={() => skip(i, it.request.kind)}
+                busy={running}
+              />
+            );
+          })}
           <div ref={scrollRef} />
         </div>
 

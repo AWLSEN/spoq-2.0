@@ -1,43 +1,110 @@
 import { NextRequest } from "next/server";
 import { getSandbox } from "@/lib/sandbox";
+import { parseCapabilityTokens } from "@/lib/capabilities/parser";
+import { buildSystemPreamble } from "@/lib/capabilities/preamble";
+import {
+  CapabilityState,
+  DEFAULT_CAPABILITY_STATE,
+} from "@/lib/capabilities/types";
+import {
+  ConversationMessage,
+  flattenConversation,
+} from "@/lib/agent/conversation";
 
 export const runtime = "nodejs";
 
+interface ChatRequest {
+  // Full conversation history from the client (includes the new user turn).
+  messages: ConversationMessage[];
+  // Client-tracked ephemeral capability state.
+  capabilities?: CapabilityState;
+}
+
 /**
- * Phase 2: stream Claude Code + GLM sandbox stdout as SSE.
- * Body: { message: string }
- * Response: text/event-stream with events:
- *   data: { "kind": "stdout", "chunk": "..." }
- *   data: { "kind": "stderr", "chunk": "..." }
- *   data: { "kind": "done", "exitCode": 0, "durationMs": 12345 }
- *   data: { "kind": "error", "message": "..." }
+ * Streams Claude Code + GLM output as SSE, extracting JIT capability
+ * requests (<<SPOQ-NEED .../>>) and emitting them as dedicated events.
+ *
+ * Event kinds:
+ *   { kind: "stdout_clean", chunk: string }   — user-visible text
+ *   { kind: "capability_request", request: { kind, reason } }
+ *   { kind: "done", exitCode, durationMs }
+ *   { kind: "error", message }
  */
 export async function POST(req: NextRequest) {
-  const body = await req.json().catch(() => ({}));
-  const message: string = typeof body?.message === "string" ? body.message : "";
-  if (!message.trim()) {
-    return new Response(JSON.stringify({ error: "empty message" }), {
+  const body = (await req.json().catch(() => ({}))) as Partial<ChatRequest>;
+  const messages = Array.isArray(body.messages) ? body.messages : [];
+  if (messages.length === 0 || messages[messages.length - 1].role !== "user") {
+    return new Response(JSON.stringify({ error: "no user message" }), {
       status: 400,
       headers: { "content-type": "application/json" },
     });
   }
+  const capState: CapabilityState = {
+    ...DEFAULT_CAPABILITY_STATE,
+    ...(body.capabilities ?? {}),
+  };
+
+  const prompt = flattenConversation(messages);
+  const preamble = buildSystemPreamble(capState);
 
   const sandbox = getSandbox();
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream({
     async start(controller) {
+      // Buffer stdout across chunks so capability tokens that span chunk
+      // boundaries are still detected. Flush clean text up to the last
+      // safe boundary on each chunk.
+      let buffer = "";
+      const send = (ev: object) =>
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify(ev)}\n\n`));
+
       try {
-        for await (const ev of sandbox.run(message)) {
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify(ev)}\n\n`));
+        for await (const ev of sandbox.run(prompt, {
+          appendSystemPrompt: preamble,
+        })) {
+          if (ev.kind === "stdout") {
+            buffer += ev.chunk;
+            // Find the last position safe to flush (i.e. we're sure no partial
+            // token straddles the split). Be conservative: flush everything
+            // up to the most recent "<<" that could start a token. If no
+            // "<<" in the last 80 chars, flush all.
+            const cutIdx = buffer.lastIndexOf("<<");
+            let flushable: string;
+            if (cutIdx === -1 || buffer.length - cutIdx > 200) {
+              // no partial token pending → flush everything, parse tokens
+              flushable = buffer;
+              buffer = "";
+            } else {
+              flushable = buffer.slice(0, cutIdx);
+              buffer = buffer.slice(cutIdx);
+            }
+            if (flushable) {
+              const { clean, requests } = parseCapabilityTokens(flushable);
+              if (clean) send({ kind: "stdout_clean", chunk: clean });
+              for (const request of requests) {
+                send({ kind: "capability_request", request });
+              }
+            }
+          } else if (ev.kind === "stderr") {
+            // forward but de-emphasize
+            send({ kind: "stderr", chunk: ev.chunk });
+          } else if (ev.kind === "done") {
+            // final flush
+            const { clean, requests } = parseCapabilityTokens(buffer);
+            buffer = "";
+            if (clean) send({ kind: "stdout_clean", chunk: clean });
+            for (const request of requests) {
+              send({ kind: "capability_request", request });
+            }
+            send({ kind: "done", exitCode: ev.exitCode, durationMs: ev.durationMs });
+          } else if (ev.kind === "error") {
+            send({ kind: "error", message: ev.message });
+          }
         }
       } catch (err) {
         const msg = err instanceof Error ? err.message : "unknown error";
-        controller.enqueue(
-          encoder.encode(
-            `data: ${JSON.stringify({ kind: "error", message: msg })}\n\n`
-          )
-        );
+        send({ kind: "error", message: msg });
       } finally {
         controller.close();
       }

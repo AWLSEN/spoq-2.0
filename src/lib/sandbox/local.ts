@@ -14,7 +14,7 @@ import { DEFAULT_TIMEOUT_MS, Sandbox, SandboxEvent } from "./types";
 class LocalSandbox implements Sandbox {
   async *run(
     prompt: string,
-    opts?: { timeoutMs?: number }
+    opts?: { timeoutMs?: number; appendSystemPrompt?: string }
   ): AsyncGenerator<SandboxEvent> {
     const timeoutMs = opts?.timeoutMs ?? DEFAULT_TIMEOUT_MS;
     const workdir = mkdtempSync(join(tmpdir(), "spoq-sandbox-"));
@@ -36,11 +36,16 @@ class LocalSandbox implements Sandbox {
       return;
     }
 
-    const child = spawn(
-      "claude",
-      ["-p", prompt, "--dangerously-skip-permissions"],
-      { cwd: workdir, env, stdio: ["ignore", "pipe", "pipe"] }
-    );
+    const args = ["-p", prompt, "--dangerously-skip-permissions"];
+    if (opts?.appendSystemPrompt) {
+      args.push("--append-system-prompt", opts.appendSystemPrompt);
+    }
+
+    const child = spawn("claude", args, {
+      cwd: workdir,
+      env,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
 
     const queue: SandboxEvent[] = [];
     let resolveNext: (() => void) | null = null;

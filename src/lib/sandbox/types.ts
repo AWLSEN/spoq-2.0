@@ -6,7 +6,10 @@ export type SandboxEvent =
 
 export interface Sandbox {
   /** Stream Claude Code CLI output for a single prompt. */
-  run(prompt: string, opts?: { timeoutMs?: number }): AsyncIterable<SandboxEvent>;
+  run(
+    prompt: string,
+    opts?: { timeoutMs?: number; appendSystemPrompt?: string }
+  ): AsyncIterable<SandboxEvent>;
 }
 
 export const DEFAULT_TIMEOUT_MS = 120_000;
