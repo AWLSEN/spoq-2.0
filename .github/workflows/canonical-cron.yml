@@ -1,0 +1,59 @@
+name: canonical task cron
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"  # every 6 hours
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      ANTHROPIC_AUTH_TOKEN: ${{ secrets.ANTHROPIC_AUTH_TOKEN }}
+      ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
+      ANTHROPIC_DEFAULT_OPUS_MODEL: ${{ secrets.ANTHROPIC_DEFAULT_OPUS_MODEL }}
+      # If set, the judge uses Claude Opus via api.anthropic.com. If empty, GLM self-judge.
+      ANTHROPIC_JUDGE_KEY: ${{ secrets.ANTHROPIC_JUDGE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Write .env
+        run: |
+          {
+            echo "ANTHROPIC_AUTH_TOKEN=$ANTHROPIC_AUTH_TOKEN"
+            echo "ANTHROPIC_BASE_URL=${ANTHROPIC_BASE_URL:-https://api.z.ai/api/anthropic}"
+            echo "ANTHROPIC_DEFAULT_OPUS_MODEL=${ANTHROPIC_DEFAULT_OPUS_MODEL:-GLM-4.6}"
+            echo "API_TIMEOUT_MS=300000"
+          } > .env
+
+      - name: Run canonical suite
+        run: python3 tests/canonical/run.py
+
+      - name: Grade with judge
+        run: |
+          LATEST=$(ls -t tests/canonical/results/run-*.jsonl | head -1)
+          python3 tests/judge/judge.py "$LATEST"
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: canonical-reports-${{ github.run_id }}
+          path: |
+            tests/canonical/results/*.jsonl
+            tests/judge/scores/*.json
+          retention-days: 30

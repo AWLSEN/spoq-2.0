@@ -1,0 +1,122 @@
+[
+  {
+    "id": "c01_recipe",
+    "category": "info",
+    "prompt": "What's a simple dal tadka recipe I can make in 30 minutes? Keep it under 200 words.",
+    "rubric": "Output includes ingredients and numbered/step-wise method. Appropriate for an older home cook."
+  },
+  {
+    "id": "c02_translate",
+    "category": "info",
+    "prompt": "Translate 'hello, how are you?' into Hindi, Spanish, and French. Format as a bullet list.",
+    "rubric": "Three distinct translations, one per language, readable in any script."
+  },
+  {
+    "id": "c03_itinerary",
+    "category": "plan",
+    "prompt": "Plan a 2-day weekend itinerary for Goa for an older couple. Day 1 and Day 2, 4-5 activities each, with timing.",
+    "rubric": "Two labelled days, 4-5 activities each, pace appropriate for an older couple."
+  },
+  {
+    "id": "c04_solar",
+    "category": "info",
+    "prompt": "What are the top 3 benefits of solar panels in a hot climate? One sentence per benefit.",
+    "rubric": "Three distinct benefits, relevant to hot climates, no hallucinated physics."
+  },
+  {
+    "id": "c05_email",
+    "category": "plan",
+    "prompt": "Help me write a polite thank-you email to someone who helped me find a job. Under 100 words.",
+    "rubric": "Greeting, specific thanks, closing. Warm but professional."
+  },
+  {
+    "id": "c06_weather",
+    "category": "info",
+    "prompt": "What should I wear in Delhi in June? Give me a 3-item list.",
+    "rubric": "Three clothing recommendations appropriate for a hot Indian summer."
+  },
+  {
+    "id": "c07_groceries",
+    "category": "plan",
+    "prompt": "Make me a shopping list for a week of simple Indian dinners for 2 people. Group by category.",
+    "rubric": "Grouped list (vegetables, grains, proteins, pantry, etc.) with reasonable quantities."
+  },
+  {
+    "id": "c08_medication_reminder",
+    "category": "plan",
+    "prompt": "My mother takes 3 tablets in the morning and 1 at night. How should I help her remember? 3 ideas.",
+    "rubric": "Three distinct reminders. Practical, kind, appropriate for an older person."
+  },
+  {
+    "id": "c09_walking_habit",
+    "category": "plan",
+    "prompt": "Suggest a 3-step plan to start a walking habit for a 60-year-old. Number the steps.",
+    "rubric": "Three numbered steps. Gradual progression, safety-minded, motivating."
+  },
+  {
+    "id": "c10_phone_setup",
+    "category": "info",
+    "prompt": "My dad is getting his first iPhone. What are the 3 most important settings to turn on first?",
+    "rubric": "Three real iOS settings (accessibility, text size, emergency contact, etc.)."
+  },
+  {
+    "id": "c11_bank_fraud",
+    "category": "info",
+    "prompt": "How do I spot a bank phishing SMS? Give me 3 warning signs.",
+    "rubric": "Three concrete warning signs (urgent language, suspicious links, wrong sender, etc.)."
+  },
+  {
+    "id": "c12_trip_pack",
+    "category": "plan",
+    "prompt": "Help me pack for a 5-day trip to London in October. Give me a checklist grouped by category.",
+    "rubric": "Grouped checklist covering weather-appropriate clothes, toiletries, documents."
+  },
+  {
+    "id": "c13_dinner_idea",
+    "category": "info",
+    "prompt": "I have rice, eggs, and onions. What can I cook in 15 minutes? One recipe.",
+    "rubric": "One coherent recipe using only the stated ingredients (plus common pantry items). Includes steps."
+  },
+  {
+    "id": "c14_exercise_knee",
+    "category": "info",
+    "prompt": "What are 3 gentle exercises for someone with mild knee pain? One line each.",
+    "rubric": "Three low-impact exercises appropriate for mild knee pain. No reckless advice."
+  },
+  {
+    "id": "c15_gift_idea",
+    "category": "info",
+    "prompt": "Suggest 3 thoughtful birthday gift ideas for a 70-year-old grandmother who loves gardening.",
+    "rubric": "Three specific gift ideas relevant to an older gardener."
+  },
+  {
+    "id": "c16_letter_to_bank",
+    "category": "plan",
+    "prompt": "Write me a short formal letter to my bank to update my phone number. Leave [name] and [number] blank.",
+    "rubric": "Formal salutation, clear subject, concise body with the two placeholders, formal closing."
+  },
+  {
+    "id": "c17_time_in_london",
+    "category": "info",
+    "prompt": "If it's 6pm in Mumbai, what time is it in London right now in October?",
+    "rubric": "Correct conversion (Mumbai = IST = UTC+5:30; London in October = BST until last Sunday of Oct, then GMT). Answer shows awareness of DST."
+  },
+  {
+    "id": "c18_compare_tea",
+    "category": "info",
+    "prompt": "What's the difference between green tea and black tea? Compare in under 80 words.",
+    "rubric": "Covers processing (oxidation), caffeine, flavor, typical health claims. Concise."
+  },
+  {
+    "id": "c19_simple_budget",
+    "category": "plan",
+    "prompt": "Help me make a simple monthly budget for a retired couple with ₹50,000 income. Show 4 categories.",
+    "rubric": "4 distinct categories (housing, food, medical, leisure/savings). Amounts add up to ₹50,000."
+  },
+  {
+    "id": "c20_code_reverse",
+    "category": "info",
+    "prompt": "Write a Python function called reverse_string that reverses a string. Include a one-line docstring and one example call.",
+    "rubric": "Valid Python function returning reversed string. Has docstring and example call."
+  }
+]

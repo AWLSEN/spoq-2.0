@@ -36,6 +36,8 @@ next-env.d.ts
 .vscode/
 .idea/
 
-# spike artifacts
+# spike / canonical artifacts
 phase0-spike/workdir/
 phase0-spike/results/*.jsonl
+tests/canonical/results/*.jsonl
+tests/judge/scores/*.json
