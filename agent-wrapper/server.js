@@ -85,8 +85,10 @@ async function handleRun(req, res) {
     env: {
       ...process.env,
       ANTHROPIC_AUTH_TOKEN: process.env.ANTHROPIC_AUTH_TOKEN ?? "",
-      ANTHROPIC_BASE_URL:
-        process.env.ANTHROPIC_BASE_URL ?? "https://api.z.ai/api/anthropic",
+      // Override unconditionally — Orb rewrites ANTHROPIC_BASE_URL to its
+      // local proxy, but for GLM we want claude-code to hit z.ai directly
+      // (listed in [network] outbound allowlist).
+      ANTHROPIC_BASE_URL: "https://api.z.ai/api/anthropic",
       ANTHROPIC_DEFAULT_OPUS_MODEL:
         process.env.ANTHROPIC_DEFAULT_OPUS_MODEL ?? "GLM-4.6",
       API_TIMEOUT_MS: process.env.API_TIMEOUT_MS ?? "300000",
