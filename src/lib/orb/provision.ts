@@ -53,20 +53,7 @@ export async function getDevComputer(): Promise<Provisioned> {
     }
   }
 
-  const url = pickUrl(record);
-  if (!url) {
-    throw new Error(
-      `Orb computer ${record.id} (${record.name}) has no public url yet — run \`orb build ${record.id}\` then retry.`
-    );
-  }
-
-  cached = { id: record.id, url: url.replace(/\/$/, "") };
+  const url = `https://${record.id.slice(0, 8)}.orbcloud.dev`;
+  cached = { id: record.id, url };
   return cached;
-}
-
-function pickUrl(c: { url?: string; public_url?: string; short_id?: string }): string | null {
-  if (c.url) return c.url;
-  if (c.public_url) return c.public_url;
-  if (c.short_id) return `https://${c.short_id}.orbcloud.dev`;
-  return null;
 }
