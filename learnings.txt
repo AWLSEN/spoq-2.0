@@ -22,3 +22,11 @@ Gotchas to remember:
 - `claude -p "<prompt>" --dangerously-skip-permissions` is the headless incantation.
 - Claude Code defaults cwd to the current dir — the t2_code task created reverse_string.py
   in the repo root. For Phase 2 sandboxes, each session needs its own workdir.
+
+2026-04-21 — Phase 2 started.
+Orb CLI auth is split: `orb status` reports ok against api.orbcloud.dev but
+`orb computer list` returns 401, and `orb login` defaults to api.orb.cloud.
+Two backends / stale token. Not a blocker — Phase 2 uses a LOCAL SUBPROCESS
+sandbox (spawn `claude -p` in a per-session temp workdir) which exactly matches
+the code path Phase 0 validated. Orb integration deferred to an adapter slot
+(`lib/sandbox/orb.ts`) and can be flipped on once auth is sorted.

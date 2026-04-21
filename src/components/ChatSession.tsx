@@ -3,7 +3,7 @@
 import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-type Msg = { role: "user" | "agent"; text: string };
+type Msg = { role: "user" | "agent"; text: string; done?: boolean };
 
 export default function ChatSession() {
   const params = useSearchParams();
@@ -12,6 +12,7 @@ export default function ChatSession() {
   const [input, setInput] = useState("");
   const [running, setRunning] = useState(false);
   const startedRef = useRef(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (q && !startedRef.current) {
@@ -21,24 +22,70 @@ export default function ChatSession() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q]);
 
+  useEffect(() => {
+    scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
   async function send(text: string) {
-    setMessages((m) => [...m, { role: "user", text }]);
+    setMessages((m) => [...m, { role: "user", text }, { role: "agent", text: "" }]);
     setInput("");
     setRunning(true);
-    // Phase 2 wires this to /api/chat. For Phase 1 we stub to prove the UI shell.
+
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ message: text }),
       });
-      const data = await res.json();
-      setMessages((m) => [...m, { role: "agent", text: data.reply ?? "(no reply)" }]);
-    } catch {
-      setMessages((m) => [
-        ...m,
-        { role: "agent", text: "Something went wrong. Try again in a moment." },
-      ]);
+      if (!res.ok || !res.body) {
+        throw new Error(`http ${res.status}`);
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const events = buffer.split("\n\n");
+        buffer = events.pop() ?? "";
+        for (const raw of events) {
+          const line = raw.trim();
+          if (!line.startsWith("data:")) continue;
+          const payload = line.slice(5).trim();
+          if (!payload) continue;
+          try {
+            const ev = JSON.parse(payload);
+            if (ev.kind === "stdout") {
+              setMessages((m) => {
+                const copy = [...m];
+                const last = copy[copy.length - 1];
+                if (last.role === "agent") last.text += ev.chunk;
+                return copy;
+              });
+            } else if (ev.kind === "error") {
+              setMessages((m) => {
+                const copy = [...m];
+                const last = copy[copy.length - 1];
+                if (last.role === "agent") last.text += `\n\n[error: ${ev.message}]`;
+                return copy;
+              });
+            }
+          } catch {
+            // ignore malformed event
+          }
+        }
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setMessages((m) => {
+        const copy = [...m];
+        const last = copy[copy.length - 1];
+        if (last.role === "agent") last.text += `\n\n[error: ${msg}]`;
+        return copy;
+      });
     } finally {
       setRunning(false);
     }
@@ -57,16 +104,14 @@ export default function ChatSession() {
               key={i}
               className={
                 m.role === "user"
-                  ? "self-end max-w-[85%] rounded-2xl bg-[#1a1a1a] px-4 py-3 text-white"
+                  ? "self-end max-w-[85%] rounded-2xl bg-[#1a1a1a] px-4 py-3 text-white whitespace-pre-wrap"
                   : "self-start max-w-[90%] rounded-2xl bg-white border border-[#e7e1d5] px-4 py-3 text-[#1a1a1a] whitespace-pre-wrap"
               }
             >
-              {m.text}
+              {m.text || (m.role === "agent" && running ? "thinking…" : "")}
             </div>
           ))}
-          {running && (
-            <div className="self-start text-sm text-[#6b645a] italic">thinking…</div>
-          )}
+          <div ref={scrollRef} />
         </div>
 
         <form
@@ -80,8 +125,9 @@ export default function ChatSession() {
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="say more…"
-            className="flex-1 bg-transparent outline-none text-[#1a1a1a] placeholder-[#a39e93]"
+            placeholder={running ? "agent is thinking…" : "say more…"}
+            disabled={running}
+            className="flex-1 bg-transparent outline-none text-[#1a1a1a] placeholder-[#a39e93] disabled:opacity-50"
           />
           <button
             type="submit"
