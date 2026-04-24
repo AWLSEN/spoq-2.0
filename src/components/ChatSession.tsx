@@ -15,7 +15,7 @@ import {
 } from "@/lib/capabilities/types";
 
 type Item =
-  | { kind: "user"; text: string }
+  | { kind: "user"; text: string; hidden?: boolean }
   | { kind: "agent"; text: string }
   | { kind: "capability"; request: CapabilityRequest; resolved?: "connected" | "skipped" };
 
@@ -28,6 +28,20 @@ export default function ChatSession() {
   const [caps, setCaps] = useState<CapabilityState>(DEFAULT_CAPABILITY_STATE);
   const startedRef = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Seed caps from Composio on mount so reloads don't re-ask for OAuth.
+  useEffect(() => {
+    const userId = getUserId();
+    if (!userId) return;
+    fetch(`/api/capabilities/seed?user_id=${encodeURIComponent(userId)}`, {
+      cache: "no-store",
+    })
+      .then((r) => r.json())
+      .then((d: { caps?: CapabilityState }) => {
+        if (d.caps && Object.keys(d.caps).length > 0) setCaps(d.caps);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (q && !startedRef.current) {
@@ -52,12 +66,16 @@ export default function ChatSession() {
     return history;
   }
 
-  async function send(text: string, capsOverride?: CapabilityState) {
+  async function send(
+    text: string,
+    capsOverride?: CapabilityState,
+    opts?: { hidden?: boolean }
+  ) {
     const activeCaps = capsOverride ?? caps;
     const messagesForApi = conversationForApi(text);
     setItems((prev) => [
       ...prev,
-      { kind: "user", text },
+      { kind: "user", text, hidden: opts?.hidden },
       { kind: "agent", text: "" },
     ]);
     setInput("");
@@ -152,8 +170,9 @@ export default function ChatSession() {
       setCaps(nextCaps);
       markCapabilityResolved(index, "connected");
       send(
-        `(${kind} is now connected as ${label} — please continue.)`,
-        nextCaps
+        `Connected: ${kind} as ${label}. Continue the task without commentary.`,
+        nextCaps,
+        { hidden: true }
       );
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -176,8 +195,9 @@ export default function ChatSession() {
     setCaps(nextCaps);
     markCapabilityResolved(index, "skipped");
     send(
-      `(${kind} was declined — please continue without it, or finish with a draft the user can send manually.)`,
-      nextCaps
+      `Declined: ${kind}. Continue without it, or finish with a draft the user can send manually.`,
+      nextCaps,
+      { hidden: true }
     );
   }
 
@@ -194,6 +214,7 @@ export default function ChatSession() {
         <div className="flex-1 flex flex-col gap-4">
           {items.map((it, i) => {
             if (it.kind === "user") {
+              if (it.hidden) return null;
               return (
                 <div
                   key={i}
