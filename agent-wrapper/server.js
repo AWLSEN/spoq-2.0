@@ -95,6 +95,8 @@ async function handleRun(req, res) {
         process.env.OPENROUTER_ANTHROPIC_BASE_URL ?? "https://openrouter.ai/api",
       ANTHROPIC_DEFAULT_OPUS_MODEL:
         process.env.ANTHROPIC_DEFAULT_OPUS_MODEL ?? "z-ai/glm-4.6",
+      CLAUDE_CODE_MAX_OUTPUT_TOKENS:
+        process.env.CLAUDE_CODE_MAX_OUTPUT_TOKENS ?? "8192",
       API_TIMEOUT_MS: process.env.API_TIMEOUT_MS ?? "300000",
     },
     stdio: ["ignore", "pipe", "pipe"],
@@ -133,7 +135,7 @@ const server = http.createServer(async (req, res) => {
     return;
   }
   if (req.method === "GET" && req.url === "/debug/env") {
-    const keys = ["ANTHROPIC_BASE_URL", "ANTHROPIC_DEFAULT_OPUS_MODEL", "API_TIMEOUT_MS", "PORT", "ORB_PORT", "ORB_PROXY_PORT", "AGENT_API_BASE_URL"];
+    const keys = ["ANTHROPIC_BASE_URL", "ANTHROPIC_DEFAULT_OPUS_MODEL", "CLAUDE_CODE_MAX_OUTPUT_TOKENS", "API_TIMEOUT_MS", "PORT", "ORB_PORT", "ORB_PROXY_PORT", "AGENT_API_BASE_URL"];
     const out = {};
     for (const k of keys) out[k] = process.env[k] ?? null;
     out.HAS_AUTH_TOKEN = Boolean(process.env.ANTHROPIC_AUTH_TOKEN);

@@ -33,6 +33,8 @@ class LocalSandbox implements Sandbox {
         process.env.ANTHROPIC_BASE_URL ?? "https://openrouter.ai/api",
       ANTHROPIC_DEFAULT_OPUS_MODEL:
         process.env.ANTHROPIC_DEFAULT_OPUS_MODEL ?? "z-ai/glm-4.6",
+      CLAUDE_CODE_MAX_OUTPUT_TOKENS:
+        process.env.CLAUDE_CODE_MAX_OUTPUT_TOKENS ?? "8192",
       API_TIMEOUT_MS: process.env.API_TIMEOUT_MS ?? "300000",
     };
 
