@@ -27,7 +27,35 @@ export default function ChatSession() {
   const [running, setRunning] = useState(false);
   const [caps, setCaps] = useState<CapabilityState>(DEFAULT_CAPABILITY_STATE);
   const startedRef = useRef(false);
+  const greetedRef = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Proactive greeting. If there's no prefilled `q`, the agent says hi
+  // first so the user never faces a cold textarea. Streamed char-by-char
+  // locally so it costs nothing; feels like a real agent typing.
+  useEffect(() => {
+    if (q || greetedRef.current) return;
+    greetedRef.current = true;
+    const GREETING =
+      "Hi, my name is SPOQ. I help people get things done, from emails to bookings to research to whatever errand is eating at you. Tell me a bit about yourself and what you're trying to get done today.";
+    setItems([{ kind: "agent", text: "" }]);
+    let i = 0;
+    const id = setInterval(() => {
+      i += 1;
+      if (i > GREETING.length) {
+        clearInterval(id);
+        return;
+      }
+      setItems((prev) => {
+        if (prev.length === 0 || prev[0].kind !== "agent") return prev;
+        return [
+          { ...prev[0], text: GREETING.slice(0, i) },
+          ...prev.slice(1),
+        ];
+      });
+    }, 18);
+    return () => clearInterval(id);
+  }, [q]);
 
   // Seed caps from Composio on mount so reloads don't re-ask for OAuth.
   useEffect(() => {
@@ -204,12 +232,14 @@ export default function ChatSession() {
   return (
     <main className="flex flex-1 flex-col px-6 py-8">
       <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6">
-        <a
-          href="/"
-          className="text-sm text-[#6b645a] hover:text-[#1a1a1a] transition-colors w-fit"
-        >
-          ← new
-        </a>
+        {items.some((it) => it.kind === "user" && !it.hidden) && (
+          <a
+            href="/"
+            className="text-sm text-[#6b645a] hover:text-[#1a1a1a] transition-colors w-fit"
+          >
+            start over
+          </a>
+        )}
 
         <div className="flex-1 flex flex-col gap-4">
           {items.map((it, i) => {
@@ -278,7 +308,7 @@ export default function ChatSession() {
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={running ? "agent is thinking…" : "say more…"}
+            placeholder={running ? "thinking…" : "reply…"}
             disabled={running}
             className="flex-1 bg-transparent outline-none text-[#1a1a1a] placeholder-[#a39e93] disabled:opacity-50"
           />

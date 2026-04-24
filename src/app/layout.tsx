@@ -16,8 +16,8 @@ const serif = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
-  title: "SPOQ — your AI",
-  description: "Tell it what you need. It gets it done.",
+  title: "SPOQ",
+  description: "A friend who handles the stuff you'd rather not.",
 };
 
 export default function RootLayout({
