@@ -55,12 +55,30 @@ export async function POST(req: NextRequest) {
   const sandbox = getSandbox();
   const encoder = new TextEncoder();
 
+  const runId = Math.random().toString(36).slice(2, 8);
+  const runStart = Date.now();
+  const logTag = `[chat ${runId}]`;
+  const lastUser = messages[messages.length - 1]?.text ?? "";
+  const connectedSlugs = Object.entries(capState)
+    .filter(([, s]) => s.state === "connected")
+    .map(([k]) => k);
+  console.log(
+    `${logTag} start user_id=${userId || "-"} caps=[${connectedSlugs.join(
+      ","
+    )}] mcp=${mcpServers.length} msg=${JSON.stringify(
+      lastUser.slice(0, 160)
+    )}${lastUser.length > 160 ? "…" : ""}`
+  );
+
   const stream = new ReadableStream({
     async start(controller) {
       // Buffer stdout across chunks so capability tokens that span chunk
       // boundaries are still detected. Flush clean text up to the last
       // safe boundary on each chunk.
       let buffer = "";
+      let stdoutBytes = 0;
+      let stderrBytes = 0;
+      const capabilityKinds: string[] = [];
       const send = (ev: object) =>
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(ev)}\n\n`));
 
@@ -71,6 +89,7 @@ export async function POST(req: NextRequest) {
         })) {
           if (ev.kind === "stdout") {
             buffer += ev.chunk;
+            stdoutBytes += ev.chunk.length;
             // Find the last position safe to flush (i.e. we're sure no partial
             // token straddles the split). Be conservative: flush everything
             // up to the most recent "<<" that could start a token. If no
@@ -89,11 +108,18 @@ export async function POST(req: NextRequest) {
               const { clean, requests } = parseCapabilityTokens(flushable);
               if (clean) send({ kind: "stdout_clean", chunk: clean });
               for (const request of requests) {
+                capabilityKinds.push(request.kind);
+                console.log(
+                  `${logTag} capability_request kind=${request.kind} reason=${JSON.stringify(request.reason)}`
+                );
                 send({ kind: "capability_request", request });
               }
             }
           } else if (ev.kind === "stderr") {
-            // forward but de-emphasize
+            stderrBytes += ev.chunk.length;
+            // log sandbox stderr server-side so we keep a record even
+            // though we also forward it to the client
+            console.warn(`${logTag} stderr ${JSON.stringify(ev.chunk.slice(0, 500))}`);
             send({ kind: "stderr", chunk: ev.chunk });
           } else if (ev.kind === "done") {
             // final flush
@@ -101,15 +127,24 @@ export async function POST(req: NextRequest) {
             buffer = "";
             if (clean) send({ kind: "stdout_clean", chunk: clean });
             for (const request of requests) {
+              capabilityKinds.push(request.kind);
+              console.log(
+                `${logTag} capability_request kind=${request.kind} reason=${JSON.stringify(request.reason)} (trailing)`
+              );
               send({ kind: "capability_request", request });
             }
+            console.log(
+              `${logTag} done exit=${ev.exitCode} sandboxMs=${ev.durationMs} totalMs=${Date.now() - runStart} stdout=${stdoutBytes}b stderr=${stderrBytes}b caps=[${capabilityKinds.join(",")}]`
+            );
             send({ kind: "done", exitCode: ev.exitCode, durationMs: ev.durationMs });
           } else if (ev.kind === "error") {
+            console.error(`${logTag} error message=${JSON.stringify(ev.message)}`);
             send({ kind: "error", message: ev.message });
           }
         }
       } catch (err) {
         const msg = err instanceof Error ? err.message : "unknown error";
+        console.error(`${logTag} exception`, err);
         send({ kind: "error", message: msg });
       } finally {
         controller.close();
