@@ -112,3 +112,47 @@ smart enough to understand things by itself, why limit it with hardcoded
 menus". Parser keeps legacy aliases (email.send → gmail, phone.sms → twilio,
 card.charge → stripe) for back-compat. JITResource renders "Can I use your
 <Prettified Slug>?" — label derived on the fly, no lookup table.
+
+2026-04-24 — UX pass: proactive greeting + anti-AI voice + simpler protocol.
+Sam's direction: "this project wins on practicality, not technicality."
+Several radical simplifications landed in one session.
+
+  - Landing and /chat collapsed. / renders ChatSession directly.
+    /chat route + ChatBox.tsx deleted. No URL hop, no serif headline,
+    no suggestion chips. Conversation from pixel one.
+
+  - Agent greets first, client-side only. On mount with no prefilled q,
+    a hardcoded greeting types out char-by-char at ~55cps. Zero GLM
+    cost per visitor, feels alive, survives scroll and user input
+    (greeting only ever mutates items[0]).
+
+  - Anti-AI voice rules baked into BOTH CLAUDE.md and preamble.ts.
+    Source: null-bytes/grant-drafter/knowledge/writing-style/anti-ai-
+    writing-guide.md + Sam feedback memories. Banned vocab (delve,
+    landscape, harness, leverage, utilize, robust, etc), no em dashes,
+    no rhetorical closers, sentences >= 5 words, no sycophantic
+    openers, use contractions.
+
+  - JIT protocol simplified. Old preamble: emit tag AND write "I'll
+    need your Gmail — is that ok?". Doublespeak since the card
+    already asks. New rule: emit one tag and stop. On connect, a
+    hidden user-role nudge ("Connected: gmail as priya@... Continue
+    the task without commentary.") kicks the agent back into work
+    without showing as a user bubble. Skip path is symmetric.
+
+  - Reload gap closed. user_id persists via localStorage, Composio
+    holds the OAuth tokens, but CapabilityState was React-only so a
+    refresh forgot connections until the agent hit the capability
+    again. New GET /api/capabilities/seed?user_id=... queries
+    composio.connectedAccounts.list and rebuilds state on mount.
+    Graceful when no key / no user (returns {caps:{}}).
+
+  - Resume-nudge voice. User message items got an optional `hidden`
+    flag — included in the API conversation but skipped in render.
+    The italic "connected gmail" chip from JITResource is the only
+    visible feedback.
+
+Verified: pnpm build passes TS + static gen. Dev server on :3001, /
+returns ChatSession, /chat returns 404, /api/capabilities/seed returns
+{caps:{}} without Composio key. verify_jit.py not re-run this session
+because the JIT parser + /api/chat were unchanged.
