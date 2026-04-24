@@ -27,11 +27,12 @@ class LocalSandbox implements Sandbox {
 
     const env = {
       ...process.env,
-      ANTHROPIC_AUTH_TOKEN: process.env.ANTHROPIC_AUTH_TOKEN ?? "",
+      ANTHROPIC_AUTH_TOKEN:
+        process.env.OPENROUTER_API_KEY ?? process.env.ANTHROPIC_AUTH_TOKEN ?? "",
       ANTHROPIC_BASE_URL:
-        process.env.ANTHROPIC_BASE_URL ?? "https://api.z.ai/api/anthropic",
+        process.env.ANTHROPIC_BASE_URL ?? "https://openrouter.ai/api",
       ANTHROPIC_DEFAULT_OPUS_MODEL:
-        process.env.ANTHROPIC_DEFAULT_OPUS_MODEL ?? "GLM-4.6",
+        process.env.ANTHROPIC_DEFAULT_OPUS_MODEL ?? "z-ai/glm-4.6",
       API_TIMEOUT_MS: process.env.API_TIMEOUT_MS ?? "300000",
     };
 

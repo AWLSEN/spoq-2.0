@@ -1,6 +1,6 @@
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import { getOrbClient, OrbApiError } from "./client";
+import { getOrbClient, hasOrbKey, OrbApiError } from "./client";
 
 const COMPUTER_NAME = process.env.ORB_COMPUTER_NAME ?? "spoq-dev-sam";
 
@@ -22,6 +22,12 @@ export async function getDevComputer(): Promise<Provisioned> {
   const idFromEnv = process.env.ORB_COMPUTER_ID;
   const urlFromEnv = process.env.ORB_COMPUTER_URL;
   if (idFromEnv && urlFromEnv) {
+    const tomlPath = join(process.cwd(), "agent-wrapper", "orb.toml");
+    if (existsSync(tomlPath) && hasOrbKey()) {
+      const toml = readFileSync(tomlPath, "utf8");
+      const client = getOrbClient();
+      await client.uploadConfig(idFromEnv, toml);
+    }
     cached = { id: idFromEnv, url: urlFromEnv.replace(/\/$/, "") };
     return cached;
   }
@@ -38,6 +44,8 @@ export async function getDevComputer(): Promise<Provisioned> {
   });
 
   let record = existing.find((c) => c.name === COMPUTER_NAME);
+  const tomlPath = join(process.cwd(), "agent-wrapper", "orb.toml");
+  const toml = existsSync(tomlPath) ? readFileSync(tomlPath, "utf8") : null;
 
   if (!record) {
     record = await client.createComputer({
@@ -46,11 +54,10 @@ export async function getDevComputer(): Promise<Provisioned> {
       disk_mb: 8192,
       user_id: "spoq-dev",
     });
-    const tomlPath = join(process.cwd(), "agent-wrapper", "orb.toml");
-    if (existsSync(tomlPath)) {
-      const toml = readFileSync(tomlPath, "utf8");
-      await client.uploadConfig(record.id, toml);
-    }
+  }
+
+  if (toml) {
+    await client.uploadConfig(record.id, toml);
   }
 
   const url = `https://${record.id.slice(0, 8)}.orbcloud.dev`;
