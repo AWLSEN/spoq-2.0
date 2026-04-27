@@ -21,7 +21,15 @@ routes = ["POST /v1/messages", "POST /v1/messages/count_tokens"]
 forward_headers = ["x-api-key", "authorization", "anthropic-version", "anthropic-beta"]
 
 [network]
-outbound = ["api.anthropic.com", "backend.composio.dev", "mcp.composio.dev"]
+outbound = [
+  "api.anthropic.com",
+  "backend.composio.dev",
+  "mcp.composio.dev",
+  "github.com",
+  "codeload.github.com",
+  "registry.npmjs.org",
+  "registry.npmjs.com",
+]
 
 [source]
 git = "https://github.com/AWLSEN/spoq-2.0"
