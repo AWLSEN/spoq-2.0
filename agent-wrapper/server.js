@@ -84,17 +84,13 @@ async function handleRun(req, res) {
     cwd: workdir,
     env: {
       ...process.env,
-      // Claude Code uses Anthropic-style env vars; for OpenRouter we map
-      // OPENROUTER_API_KEY -> ANTHROPIC_AUTH_TOKEN and set OpenRouter's
-      // Anthropic-compatible base URL.
-      ANTHROPIC_AUTH_TOKEN:
-        process.env.OPENROUTER_API_KEY ?? process.env.ANTHROPIC_AUTH_TOKEN ?? "",
-      // Force child process traffic directly to OpenRouter. Orb sets
-      // ANTHROPIC_BASE_URL in the wrapper process to its local proxy.
+      // Pass Anthropic-style env vars straight from orb.toml. The wrapper
+      // does not force a base URL anymore — whatever orb.toml puts in
+      // ANTHROPIC_BASE_URL wins, so we can swap providers (Anthropic,
+      // OpenRouter, Z.AI, etc.) without code changes.
+      ANTHROPIC_AUTH_TOKEN: process.env.ANTHROPIC_AUTH_TOKEN ?? "",
       ANTHROPIC_BASE_URL:
-        process.env.OPENROUTER_ANTHROPIC_BASE_URL ?? "https://openrouter.ai/api",
-      ANTHROPIC_DEFAULT_OPUS_MODEL:
-        process.env.ANTHROPIC_DEFAULT_OPUS_MODEL ?? "z-ai/glm-4.6",
+        process.env.ANTHROPIC_BASE_URL ?? "https://api.anthropic.com",
       CLAUDE_CODE_MAX_OUTPUT_TOKENS:
         process.env.CLAUDE_CODE_MAX_OUTPUT_TOKENS ?? "8192",
       API_TIMEOUT_MS: process.env.API_TIMEOUT_MS ?? "300000",
@@ -135,13 +131,11 @@ const server = http.createServer(async (req, res) => {
     return;
   }
   if (req.method === "GET" && req.url === "/debug/env") {
-    const keys = ["ANTHROPIC_BASE_URL", "ANTHROPIC_DEFAULT_OPUS_MODEL", "CLAUDE_CODE_MAX_OUTPUT_TOKENS", "API_TIMEOUT_MS", "PORT", "ORB_PORT", "ORB_PROXY_PORT", "AGENT_API_BASE_URL"];
+    const keys = ["ANTHROPIC_BASE_URL", "ANTHROPIC_MODEL", "ANTHROPIC_DEFAULT_OPUS_MODEL", "ANTHROPIC_DEFAULT_SONNET_MODEL", "ANTHROPIC_DEFAULT_HAIKU_MODEL", "CLAUDE_CODE_MAX_OUTPUT_TOKENS", "API_TIMEOUT_MS", "PORT", "ORB_PORT", "ORB_PROXY_PORT", "AGENT_API_BASE_URL"];
     const out = {};
     for (const k of keys) out[k] = process.env[k] ?? null;
     out.HAS_AUTH_TOKEN = Boolean(process.env.ANTHROPIC_AUTH_TOKEN);
-    out.AUTH_TOKEN_PREFIX = (process.env.ANTHROPIC_AUTH_TOKEN ?? "").slice(0, 8);
-    out.HAS_OPENROUTER_KEY = Boolean(process.env.OPENROUTER_API_KEY);
-    out.OPENROUTER_KEY_PREFIX = (process.env.OPENROUTER_API_KEY ?? "").slice(0, 8);
+    out.AUTH_TOKEN_PREFIX = (process.env.ANTHROPIC_AUTH_TOKEN ?? "").slice(0, 12);
     res.writeHead(200, { "content-type": "application/json" });
     res.end(JSON.stringify(out, null, 2));
     return;
