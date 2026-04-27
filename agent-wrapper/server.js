@@ -88,6 +88,12 @@ async function handleRun(req, res) {
       // does not force a base URL anymore — whatever orb.toml puts in
       // ANTHROPIC_BASE_URL wins, so we can swap providers (Anthropic,
       // OpenRouter, Z.AI, etc.) without code changes.
+      //
+      // CLAUDE_CODE_OAUTH_TOKEN is preferred over ANTHROPIC_AUTH_TOKEN
+      // because it triggers Claude Code's OAuth code path, which adds
+      // `anthropic-beta: oauth-2025-04-20` — without that header,
+      // api.anthropic.com rejects sk-ant-oat- bearer tokens with 401.
+      CLAUDE_CODE_OAUTH_TOKEN: process.env.CLAUDE_CODE_OAUTH_TOKEN ?? "",
       ANTHROPIC_AUTH_TOKEN: process.env.ANTHROPIC_AUTH_TOKEN ?? "",
       ANTHROPIC_BASE_URL:
         process.env.ANTHROPIC_BASE_URL ?? "https://api.anthropic.com",
@@ -134,6 +140,8 @@ const server = http.createServer(async (req, res) => {
     const keys = ["ANTHROPIC_BASE_URL", "ANTHROPIC_MODEL", "ANTHROPIC_DEFAULT_OPUS_MODEL", "ANTHROPIC_DEFAULT_SONNET_MODEL", "ANTHROPIC_DEFAULT_HAIKU_MODEL", "CLAUDE_CODE_MAX_OUTPUT_TOKENS", "API_TIMEOUT_MS", "PORT", "ORB_PORT", "ORB_PROXY_PORT", "AGENT_API_BASE_URL"];
     const out = {};
     for (const k of keys) out[k] = process.env[k] ?? null;
+    out.HAS_OAUTH_TOKEN = Boolean(process.env.CLAUDE_CODE_OAUTH_TOKEN);
+    out.OAUTH_TOKEN_PREFIX = (process.env.CLAUDE_CODE_OAUTH_TOKEN ?? "").slice(0, 12);
     out.HAS_AUTH_TOKEN = Boolean(process.env.ANTHROPIC_AUTH_TOKEN);
     out.AUTH_TOKEN_PREFIX = (process.env.ANTHROPIC_AUTH_TOKEN ?? "").slice(0, 12);
     res.writeHead(200, { "content-type": "application/json" });
